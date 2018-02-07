@@ -1,6 +1,11 @@
 import requests
-
+import os
 from imagemonkey.exceptions import *
+import logging
+
+
+log = logging.getLogger(__name__)
+log.addHandler(logging.NullHandler())
 
 class PolyPoint(object):
 	def __init__(self, x, y):
@@ -60,11 +65,30 @@ class Image(object):
 		self._width = width
 		self._height = height
 
+	@property
+	def uuid(self):
+		return self._uuid
+
+	@property
+	def width(self):
+		return self._width
+
+	@property
+	def height(self):
+		return self._height
+
+	def __str__(self):
+		return str(self.__class__) + ": " + str(self.__dict__)
+
 
 class Annotation(object):
 	def __init__(self, label, data):
 		self._data = data
 		self._label = label
+
+	@property
+	def label(self):
+		return self._label
 
 
 
@@ -86,6 +110,9 @@ class DataEntry(object):
 	@property
 	def image(self):
 		return self._image
+
+	def __str__(self):
+		return str(self.__class__) + ": " + str(self.__dict__)
 
 
 def _parse_result(data):
@@ -151,15 +178,33 @@ class API(object):
 
 
 
-	def download_images(self, labels, folder):
+	"""def download_images(self, labels, folder):
 		url = self._base_url + "v" + str(self._api_version) + "/donation/"
 		data = self.export(labels)
 		for elem in data:
 			img_url = url + data["uuid"]
-			print "Downloading image %s" % (img_url,)
+			log.info("Downloading image %s" % (img_url,))
 			r = requests.get(img_url)
 			if(r.status_code != 200):
-				pass
+				pass"""
+
+	def download_image(self, uuid, folder):
+		if not os.path.isdir(folder):
+			raise ImageMonkeyGeneralError("folder %s doesn't exist" %(folder,))
+
+		filename = folder + os.path.sep + uuid
+		if os.path.exists(filename):
+			raise ImageMonkeyGeneralError("image %s already exists in folder %s" %(uuid,folder))
+
+		url = self._base_url + "v" + str(self._api_version) + "/donation/" + uuid
+		response = requests.get(url)
+		if response.status_code == 200:
+			log.info("Downloading image %s" %(uuid,))
+			with open(filename, 'wb') as f:
+				f.write(response.content)
+		else:
+			raise ImageMonkeyAPIError("couldn't download image %s" %(uuid,))
+
 
 
 
