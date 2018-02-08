@@ -176,23 +176,13 @@ class API(object):
 		data = r.json()
 		return _parse_result(data)
 
-
-
-	"""def download_images(self, labels, folder):
-		url = self._base_url + "v" + str(self._api_version) + "/donation/"
-		data = self.export(labels)
-		for elem in data:
-			img_url = url + data["uuid"]
-			log.info("Downloading image %s" % (img_url,))
-			r = requests.get(img_url)
-			if(r.status_code != 200):
-				pass"""
-
 	def download_image(self, uuid, folder):
+		extension = ".jpg"
+
 		if not os.path.isdir(folder):
 			raise ImageMonkeyGeneralError("folder %s doesn't exist" %(folder,))
 
-		filename = folder + os.path.sep + uuid
+		filename = folder + os.path.sep + uuid + extension
 		if os.path.exists(filename):
 			raise ImageMonkeyGeneralError("image %s already exists in folder %s" %(uuid,folder))
 
