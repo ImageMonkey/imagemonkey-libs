@@ -1,5 +1,9 @@
 # Python #
 
+This library is a small wrapper around the [ImageMonkey](https://imagemonkey.io) API. 
+
+**WARNING** The library is still in an alpha stage, which means that the API may change as the development continues. 
+
 ## Requirements ##
 
 * Python 3.x is required
