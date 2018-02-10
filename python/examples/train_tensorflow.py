@@ -10,4 +10,4 @@ if __name__ == "__main__":
 	logging.basicConfig()
 
 	tensorflow_trainer = TensorflowTrainer("C:\\Users\\Bernhard\\imagemonkey_dogs\\training", clear_before_start=True)
-	tensorflow_trainer.train(["orange", "glass"])
+	tensorflow_trainer.train(["orange", "glass"], min_probability = 0.8)

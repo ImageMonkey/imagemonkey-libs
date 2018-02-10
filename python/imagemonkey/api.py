@@ -115,7 +115,7 @@ class DataEntry(object):
 		return str(self.__class__) + ": " + str(self.__dict__)
 
 
-def _parse_result(data):
+def _parse_result(data, min_probability):
 	res = []
 	for elem in data:
 		image = Image(elem["uuid"], elem["width"], elem["height"])
@@ -130,6 +130,15 @@ def _parse_result(data):
 				annotation = Annotation(raw_annotation["label"], polygon)
 				annotations.append(annotation)
 		for raw_validation in raw_validations:
+			validation_probability = 0
+			try:
+				validation_probability = float(raw_validation["num_yes"]) / (raw_validation["num_yes"] + raw_validation["num_no"])
+			except ZeroDivisionError:
+				pass
+				
+			if validation_probability < min_probability:
+				log.debug("skipping validation entry, as probability < min. probability")
+				continue
 			validations.append(Validation(raw_validation["label"], raw_validation["num_yes"], raw_validation["num_no"]))
 
 		res.append(DataEntry(image, validations, annotations))
@@ -158,7 +167,7 @@ class API(object):
 		data = r.json()
 		return data
 
-	def export(self, labels):
+	def export(self, labels, min_probability = 0.8):
 		query = ""
 		for x in range(len(labels)):
 			query += labels[x]
@@ -174,7 +183,7 @@ class API(object):
 			raise ImageMonkeyAPIError(data["error"])
 
 		data = r.json()
-		return _parse_result(data)
+		return _parse_result(data, min_probability)
 
 	def download_image(self, uuid, folder):
 		extension = ".jpg"
