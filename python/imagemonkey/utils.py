@@ -156,7 +156,7 @@ class TensorflowTrainer(object):
 	def _train(self):
 		log.debug("Starting tensorflow retrain")
 		cmd = ("python " + self._retrain_py + " --image_dir " + self._images_dir + os.path.sep
-			+ " --output_graph " + self._model_output_dir + " --output_labels " + self._model_output_dir 
+			+ " --output_graph " + (self._model_output_dir + os.path.sep + "graph.pb") + " --output_labels " + (self._model_output_dir + os.path.sep + "labels.txt")
 			+ " --intermediate_output_graphs_dir " + self._model_output_tmp_dir + " --model_dir " + self._models_dir
 			+ " --bottleneck_dir " + self._model_output_tmp_dir)
 		self._run_command(cmd)
