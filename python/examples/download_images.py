@@ -3,7 +3,7 @@ import sys
 import os
 sys.path.insert(1, os.path.join(sys.path[0], '..'))
 
-from imagemonkey import API
+from pymonkey import API
 
 
 if __name__ == "__main__":

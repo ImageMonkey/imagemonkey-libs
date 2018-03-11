@@ -1,6 +1,6 @@
 import os
-from imagemonkey.exceptions import *
-from imagemonkey.api import *
+from pymonkey.exceptions import *
+from pymonkey.api import *
 import logging
 import shutil
 import subprocess

@@ -16,7 +16,7 @@ download all images that are tagged with the label `dog` and store them in `C:\d
 
 ```python
 import logging
-from imagemonkey import API
+from pymonkey import API
 
 
 if __name__ == "__main__":
@@ -42,8 +42,8 @@ Internally the `TensorflowTrainer` class uses the tensorflow [`retrain.py`](http
 ```python
 import logging
 
-from imagemonkey import API
-from imagemonkey import TensorflowTrainer
+from pymonkey import API
+from pymonkey import TensorflowTrainer
 
 if __name__ == "__main__":
 	logging.basicConfig()
