@@ -1,6 +1,6 @@
 import requests
 import os
-from pymonkey.exceptions import *
+from pyimagemonkey.exceptions import *
 import logging
 
 

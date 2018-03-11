@@ -11,7 +11,7 @@ def rmDirectories():
 		pass
 
 	try:
-		shutil.rmtree(currentDir + os.path.sep + "pymonkey.egg-info")
+		shutil.rmtree(currentDir + os.path.sep + "pyimagemonkey.egg-info")
 	except FileNotFoundError:
 		pass
 
@@ -36,7 +36,7 @@ def publish(test=True):
 	
 
 if __name__ == "__main__":
-	print("Publish pymonkey to (Test-) PyPI")
+	print("Publish pyimagemonkey to (Test-) PyPI")
 	print("1. Publish to Test-PyPI")
 	print("2. Publish to PyPI")
 	print("\n\n")
@@ -46,8 +46,8 @@ if __name__ == "__main__":
 			retVal = publish(test=True)
 			rmDirectories()
 			if retVal:
-				print("The package is now available at: https://test.pypi.org/project/pymonkey/")
-				print("You can install it with: pip3 install --no-cache-dir --index-url https://test.pypi.org/simple/ pymonkey")
+				print("The package is now available at: https://test.pypi.org/project/pyimagemonkey/")
+				print("You can install it with: pip3 install --no-cache-dir --index-url https://test.pypi.org/simple/ pyimagemonkey")
 
 	elif selection == "2":
 		verify = input("Do you really want to push to PRODUCTION PyPI? (yes/no) ")

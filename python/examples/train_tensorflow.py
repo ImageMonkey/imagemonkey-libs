@@ -3,8 +3,8 @@ import sys
 import os
 sys.path.insert(1, os.path.join(sys.path[0], '..'))
 
-from pymonkey import API
-from pymonkey import TensorflowTrainer
+from pyimagemonkey import API
+from pyimagemonkey import TensorflowTrainer
 
 if __name__ == "__main__":
 	logging.basicConfig()
