@@ -20,6 +20,49 @@ class PolyPoint(object):
 	def y(self):
 		return self._y
 
+class Rectangle(object):
+	def __init__(self, top, left, width, height):
+		self._top = top
+		self._left = left
+		self._width = width
+		self._height = height
+
+	@property
+	def top(self):
+		return self._top
+	@property
+	def left(self):
+		return self._left
+	@property
+	def width(self):
+		return self._width
+	@property
+	def scaled(self, rect):
+		if not isinstance(rect, Rectangle):
+			raise ValueError("expected rectangle")
+
+		top = self._top
+		if self._top > rect.top:
+			top = rect.top
+
+		left = self._left
+		if self._left > rect.left:
+			left = rect.left
+
+		width = self._width
+		if self._width > rect.width:
+			width = rect.width
+
+		height = self._height
+		if self._height > rect.height:
+			height = rect.height
+
+		return Rectangle(top, left, width, height)
+
+
+
+
+
 class Polygon(object):
 	def __init__(self, poly_points):
 		self._angle = 0
@@ -39,6 +82,27 @@ class Polygon(object):
 	@property
 	def points(self):
 		return self._points
+
+	#returns the bounding rectangle
+	@property
+	def rect(self):
+		if len(self._points) == 0:
+			raise ValueError("Can't compute bounding box of empty list")
+		minx, miny = float("inf"), float("inf")
+		maxx, maxy = float("-inf"), float("-inf")
+		for point in self._points:
+			# Set min coords
+			if point.x < minx:
+				minx = point.x
+			if point.y < miny:
+				miny = point.y
+            # Set max coords
+			if point.x > maxx:
+				maxx = point.x
+			elif point.y > maxy:
+				maxy = point.y
+
+		return Rectangle(left=minx, top=miny, width=(maxx - minx), height=(maxy - miny))
 
 class Validation(object):
 	def __init__(self, label, num_yes, num_no):
@@ -128,6 +192,10 @@ def _parse_result(data, min_probability):
 				polygon = Polygon(raw_annotation["points"])
 				polygon.angle = raw_annotation["angle"]
 				annotation = Annotation(raw_annotation["label"], polygon)
+				annotations.append(annotation)
+			if(raw_annotation["type"] == "rect"):
+				rect = Rectangle(raw_annotation["top"], raw_annotation["left"], raw_annotation["width"], raw_annotation["height"])
+				annotation = Annotation(raw_annotation["label"], rect)
 				annotations.append(annotation)
 		for raw_validation in raw_validations:
 			validation_probability = 0
