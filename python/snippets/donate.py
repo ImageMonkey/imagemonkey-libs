@@ -42,7 +42,7 @@ def _push(filename, label):
 		print("Timeout for %s: " %(f,))
 
 def _load_img_and_resize(path):
-	max_dimension = 1000 #px
+	max_dimension = 1024 #px
 
 	img = Image.open(path)
 
