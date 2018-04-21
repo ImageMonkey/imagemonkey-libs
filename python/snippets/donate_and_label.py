@@ -8,12 +8,12 @@ import secrets
 import traceback
 
 FOLDERNAME = ""
-BASEURL =  'http://127.0.0.1:8081' #'https://api.imagemonkey.io'
+BASEURL = 'https://api.imagemonkey.io' #'http://127.0.0.1:8081'
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 
-if secrets.X_API_TOKEN == "":
-	print("Please provide a valid API Token")
+if not hasattr(secrets, 'X_API_TOKEN') or secrets.X_API_TOKEN == "":
+	print("Please provide a valid API Token in secrets.py")
 	sys.exit(1)
 
 
