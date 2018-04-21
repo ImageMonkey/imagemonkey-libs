@@ -3,3 +3,4 @@ python/MANIFEST
 python/README.rst
 python/dist
 python/pyimagemonkey.egg-info
+python/snippets/secrets.py
