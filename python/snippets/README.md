@@ -1,4 +1,4 @@
-The following document describes a way to easily upload images to ImageMonkey and tag them with arbitrary labels in a scripted manner. 
+The following document describes how to easily upload images to ImageMonkey and tag them with arbitrary labels in a scripted manner. 
 
 # Prerequisites
 
