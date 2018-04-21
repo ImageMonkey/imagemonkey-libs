@@ -1,3 +1,13 @@
+
+
+# Prerequisites
+
+* Python 3 (should also work with Python 2.7, but I haven't tested it)
+* requests needs to be installed (`pip install requests`)
+* Pillow needs to be installed (`pip install Pillow`)
+
+# Usage
+
 * Create an ImageMonkey account here: https://imagemonkey.io/signup
 * Login via https://imagemonkey.io/login
 * Go to your Profile page 
