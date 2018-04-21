@@ -6,7 +6,7 @@
 ![alt text](https://raw.githubusercontent.com/bbernhard/imagemonkey-libs/master/python/doc/snippets/img/add_token.png)
 * Copy API token to clipboard
 ![alt text](https://raw.githubusercontent.com/bbernhard/imagemonkey-libs/master/python/doc/snippets/img/copy_token_to_clipboard.png)
-* Download https://github.com/bbernhard/imagemonkey-libs/blob/master/python/snippets/donate_and_label.py and https://github.com/bbernhard/imagemonkey-libs/blob/master/python/snippets/secrets.template and put them into the appropriate folder
+* Download [donate_and_label.py](https://github.com/bbernhard/imagemonkey-libs/blob/master/python/snippets/donate_and_label.py) and [secrets.template](https://github.com/bbernhard/imagemonkey-libs/blob/master/python/snippets/secrets.template) and put them into the appropriate folder
 
 ![alt text](https://raw.githubusercontent.com/bbernhard/imagemonkey-libs/master/python/doc/snippets/img/folder_structure.png)
 
