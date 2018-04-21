@@ -1,4 +1,4 @@
-
+The following document describes a way to easily upload images to ImageMonkey in a scripted manner. 
 
 # Prerequisites
 
