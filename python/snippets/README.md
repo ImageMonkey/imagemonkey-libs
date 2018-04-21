@@ -1,9 +1,15 @@
 * Create an ImageMonkey account here: https://imagemonkey.io/signup
 * Login via https://imagemonkey.io/login
 * Go to your Profile page 
+![alt text](https://raw.githubusercontent.com/bbernhard/imagemonkey-libs/master/python/doc/snippets/img/profile.png)
 * Create a new API token
+![alt text](https://raw.githubusercontent.com/bbernhard/imagemonkey-libs/master/python/doc/snippets/img/add_token.png)
 * Copy API token to clipboard
+![alt text](https://raw.githubusercontent.com/bbernhard/imagemonkey-libs/master/python/doc/snippets/img/copy_token_to_clipboard.png)
 * Download https://github.com/bbernhard/imagemonkey-libs/blob/master/python/snippets/donate_and_label.py and https://github.com/bbernhard/imagemonkey-libs/blob/master/python/snippets/secrets.template and put them into the appropriate folder
+
+![alt text](https://raw.githubusercontent.com/bbernhard/imagemonkey-libs/master/python/doc/snippets/img/folder_structure.png)
+
 * Rename `secrets.template` to `secrets.py` and insert your API token
 * Open `donate_and_label.py` and change the global variable `FOLDERNAME` to the name of the folder you want to push. The script allows to push only one folder at the time. 
 * Create a json file which contains a list of all labels that apply to the files in the folder. The json file needs to be at the same level as the folder and needs to have the same name as the folder (just with a `.json` suffix). 
@@ -48,3 +54,4 @@ So our json file could look like this:
 * Open a command line, `cd` to the directory your Python script resides and start it with `python donate_and_label.py`
 * The script now gives you a quick summary what it will be doing. **Please verify that you have specified the correct folder and label names.**
 
+![alt text](https://raw.githubusercontent.com/bbernhard/imagemonkey-libs/master/python/doc/snippets/img/confirm.png)
