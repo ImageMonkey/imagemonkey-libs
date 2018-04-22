@@ -78,7 +78,7 @@ def _add_labels(uuid, labels):
 
 	l = []
 	for elem in labels:
-		l.append({"label": elem["label"]})
+		l.append({"label": elem["label"], "annotatable": elem["annotatable"]})
 
 	try:
 		response = requests.post(url, json=l, headers={"X-Api-Token": secrets.X_API_TOKEN})
