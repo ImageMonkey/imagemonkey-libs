@@ -148,6 +148,8 @@ train_config: {
       epsilon: 1.0
     }
   }
+  fine_tune_checkpoint: xxx
+  from_detection_checkpoint: true
   num_steps: 200000
   data_augmentation_options {
     random_horizontal_flip {

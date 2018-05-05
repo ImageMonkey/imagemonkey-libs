@@ -13,7 +13,9 @@ import tensorflow as tf
 import dataset_util
 from PIL import Image
 import io
+import urllib
 import pyimagemonkey.tf_pipeline_configs as tf_pipeline_configs
+import pyimagemonkey.helper as helper
 
 
 def _group_annotations_per_label(annotations):
@@ -48,6 +50,7 @@ class TensorflowTrainer(object):
 		self._images_dir = training_dir + os.path.sep + "images"
 		self._model_output_dir = training_dir + os.path.sep + "output"
 		self._models_dir = training_dir + os.path.sep + "models"
+		self._checkpoints_dir = training_dir + os.path.sep + "checkpoints"
 		self._model_output_tmp_dir = self._model_output_dir + os.path.sep + "tmp"
 		self._image_classification_output_tmp_dir = self._model_output_tmp_dir + os.path.sep + "image_classification"
 		self._object_detection_output_tmp_dir = self._model_output_tmp_dir + os.path.sep + "object_detection"
@@ -85,6 +88,9 @@ class TensorflowTrainer(object):
 
 		if not os.path.exists(self._models_dir):
 			os.makedirs(self._models_dir)
+
+		if not os.path.exists(self._checkpoints_dir):
+			os.makedirs(self._checkpoints_dir)
 
 		if self._auto_download_tensorflow_train_script:
 			if not self._retrain_py_exists():
@@ -270,6 +276,8 @@ class TensorflowTrainer(object):
 
 
 	def _train_object_detection(self, categories, entries):
+		self._download_checkpoint_if_not_exist("ssd_mobilenet_v1_coco_11_06_2017")
+		self._copy_checkpoint_to_training_dir("ssd_mobilenet_v1_coco_11_06_2017")
 		self._write_tf_record_file(categories, entries)
 		self._write_labels_map(categories)
 		self._write_tf_pipeline_config(categories)
@@ -293,13 +301,50 @@ class TensorflowTrainer(object):
 
 		cmd = ("python " + object_detection_py + " --pipeline_config_path=" + self._object_detection_pipeline_config_path 
 				+ " --train_dir=" + self._object_detection_output_tmp_dir)
+		#print(cmd)
 		self._run_command(cmd, cwd=self._object_detection_output_tmp_dir, env=my_env)
+
+	def _handle_checkpoint_download_progress(self, count, block_size, total_size):
+	    print("[%d/%d] Downloading Checkpoint" %(block_size, total_size))
+
+	def _download_checkpoint_if_not_exist(self, dataset_name):
+		url = "http://download.tensorflow.org/models/object_detection/%s.tar.gz" %(dataset_name,)
+
+		log.info("Downloading %s" %(url,))
+
+		path_without_suffix = self._checkpoints_dir + os.path.sep + dataset_name
+		path = path_without_suffix + ".tar.gz"
+		if not os.path.exists(path):
+			urllib.request.urlretrieve(url, path, self._handle_checkpoint_download_progress)
+			#TODO: handle urllib exception + remove partialy downloaded file in that case
+		else:
+			log.info("Checking if checkpoint exists...found")
+
+			#check if checkpoints archive is already extracted
+			if helper.directory_exists(path_without_suffix):
+				if os.listdir(path_without_suffix) == []:
+					helper.extract_tar_gz(path, self._checkpoints_dir)
+			else:
+				log.info("Extracting object detection checkpoint")
+				helper.extract_tar_gz(path, self._checkpoints_dir)
+
+	def _copy_checkpoint_to_training_dir(self, dataset_name):
+		log.info("Copying checkpoint to training directory")
+		path = self._checkpoints_dir + os.path.sep + dataset_name
+		files = os.listdir(path)
+		for file in files:
+			file_name = os.path.join(path, file)
+			dest_file_name = self._object_detection_output_tmp_dir + os.path.sep + file
+			if os.path.isfile(file_name):
+				shutil.copy(file_name, dest_file_name)
 
 
 	def _write_tf_pipeline_config(self, categories):
+		fpath = "model.ckpt"
 		with open(self._object_detection_pipeline_config_path, "w") as f:
 			cfg = tf_pipeline_configs.SSD_MOBILENET_V1
 			cfg = cfg.replace("num_classes: xxx", "num_classes: %d" %(len(categories)))
+			cfg = cfg.replace("fine_tune_checkpoint: xxx", "fine_tune_checkpoint: \"%s\"" %(fpath,))
 			f.write(cfg)
 		
 
@@ -356,11 +401,6 @@ class TensorflowTrainer(object):
 		#we might have some images in our dataset, which don't have a annotation, skip those
 		if((len(xmins) == 0) or (len(xmaxs) == 0) or (len(ymins) == 0) or (len(ymaxs) == 0)):
 			return None
-
-		#xmins.append(10)
-		#ymins.append(10)
-		#xmaxs.append(10)
-		#ymaxs.append(10)
  
 		classes = [(categories.index(label) + 1)] #class indexes start with 1
 
