@@ -10,7 +10,7 @@ import pip
 import sys
 import enum
 import tensorflow as tf
-import dataset_util
+#import dataset_util
 from PIL import Image
 import io
 import urllib
