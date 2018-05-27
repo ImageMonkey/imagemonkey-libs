@@ -241,6 +241,18 @@ class TensorflowTrainer(object):
 		#	print(line.rstrip())
 		#	log.info(line.rstrip())
 
+	def _image_classification_sanity_check(self, categories):
+		log.debug("Running image classification sanity check")
+		#it doesn't make sense to run tensorflow on image categories where we have less than 20 images
+		#see https://github.com/tensorflow/tensorflow/issues/2072
+		for category in categories:
+			dir = self._images_dir + os.path.sep + category
+			files = os.listdir(dir)
+			if len(files) < 20:
+				raise ImageMonkeyGeneralError("Cannot run tensorflow image classification on catoriges with less than 20 images. %s has less than 20 images!" %(category,))
+
+
+
 
 	def _train_image_classification(self):
 		log.debug("Starting tensorflow retrain")
@@ -267,7 +279,7 @@ class TensorflowTrainer(object):
 	def train(self, labels, min_probability = 0.8, train_type=Type.IMAGE_CLASSIFICATION):
 		if train_type == Type.IMAGE_CLASSIFICATION:
 			self._export_data_and_download_images(labels, min_probability)
-
+			self._image_classification_sanity_check(labels)
 			self._train_image_classification()
 		elif train_type == Type.OBJECT_DETECTION:
 			data = self._export_data_and_download_images(labels, min_probability)

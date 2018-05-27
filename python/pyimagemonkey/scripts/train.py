@@ -17,7 +17,7 @@ def _split_labels(labels, delimiter):
 
 
 if __name__ == "__main__":
-	logging.basicConfig()
+	logging.basicConfig(level=logging.DEBUG)
 
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--labels', help='labels that you want to train your model on', required=True)
@@ -35,6 +35,8 @@ if __name__ == "__main__":
 		sys.exit(1)
 
 
-	#["orange", "spoon"]
-	tensorflow_trainer = TensorflowTrainer("/tmp/test", clear_before_start=True, tf_object_detection_models_path="/tensorflow_models/")
-	tensorflow_trainer.train(_split_labels(args.labels, args.delimiter), min_probability = 0.8, train_type = detection_type)
+	try:
+		tensorflow_trainer = TensorflowTrainer("/tmp/test", clear_before_start=True, tf_object_detection_models_path="/tensorflow_models/")
+		tensorflow_trainer.train(_split_labels(args.labels, args.delimiter), min_probability = 0.8, train_type = detection_type)
+	except Exception as e: 
+		print(e)
