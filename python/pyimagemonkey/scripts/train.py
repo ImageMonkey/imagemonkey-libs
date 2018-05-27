@@ -37,4 +37,4 @@ if __name__ == "__main__":
 
 	#["orange", "spoon"]
 	tensorflow_trainer = TensorflowTrainer("/tmp/test", clear_before_start=True, tf_object_detection_models_path="/tensorflow_models/")
-	tensorflow_trainer.train(self._split_labels(args.labels, args.delimiter), min_probability = 0.8, train_type = detection_type)
+	tensorflow_trainer.train(_split_labels(args.labels, args.delimiter), min_probability = 0.8, train_type = detection_type)
