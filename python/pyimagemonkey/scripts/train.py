@@ -26,9 +26,9 @@ if __name__ == "__main__":
 	args = parser.parse_args()
 
 	detection_type = None
-	if parser.detection_type == "object_detection":
+	if args.detection_type == "object_detection":
 		detection_type = Type.OBJECT_DETECTION
-	elif parser.detection_type == "image_classification":
+	elif args.detection_type == "image_classification":
 		detection_type = Type.IMAGE_CLASSIFICATION
 	else:
 		print("Unknown object_detection type: %s" %(detection_type,))
@@ -37,4 +37,4 @@ if __name__ == "__main__":
 
 	#["orange", "spoon"]
 	tensorflow_trainer = TensorflowTrainer("/tmp/test", clear_before_start=True, tf_object_detection_models_path="/tensorflow_models/")
-	tensorflow_trainer.train(self._split_labels(parser.labels, parser.delimiter), min_probability = 0.8, train_type = detection_type)
+	tensorflow_trainer.train(self._split_labels(args.labels, args.delimiter), min_probability = 0.8, train_type = detection_type)
