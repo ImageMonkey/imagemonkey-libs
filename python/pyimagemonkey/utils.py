@@ -236,7 +236,9 @@ class TensorflowTrainer(object):
 		for line in iter(process.stdout.readline, b''):
 			print(line.rstrip())
 			log.info(line.rstrip())
-			#if process.poll() is not None:
+			if process.poll() is not None:
+				log.Info("Success! The model is available at: " %((self._model_output_dir + os.path.sep + "graph.pb")))
+				return
 
 
 		#for line in iter(process.stdout.readline, b''):
