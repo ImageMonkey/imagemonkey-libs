@@ -226,14 +226,14 @@ class TensorflowTrainer(object):
 	def _run_command(self, command, cwd=None, env=None):
 		process = None
 		if cwd is None:
-			process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True, universal_newlines=True)
+			process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=sys.stdout, shell=True, universal_newlines=True)
 		else:
 			if env is None:
-				process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True, universal_newlines=True, cwd=cwd)
+				process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=sys.stdout, shell=True, universal_newlines=True, cwd=cwd)
 			else:
-				process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True, universal_newlines=True, cwd=cwd, env=env)
+				process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=sys.stdout, shell=True, universal_newlines=True, cwd=cwd, env=env)
 
-		for line in iter(process.stderr.readline, b''):
+		for line in iter(process.stdout.readline, b''):
 			print(line.rstrip())
 			log.info(line.rstrip())
 
