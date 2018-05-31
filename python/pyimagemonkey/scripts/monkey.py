@@ -23,13 +23,13 @@ if __name__ == "__main__":
 	subparsers = parser.add_subparsers(help='', dest='command')
 
 	#add subparser for 'train'
-	train_parser = subparsers.add_parser('train', help='Train a model on some ImageMonkey labels')
-	train_parser.add_argument('--labels', help='labels that you want to train your model on', required=True)
+	train_parser = subparsers.add_parser('train', help='train your own model')
+	train_parser.add_argument('--labels', help='list of ImageMonkey labels that you want to train your model on', required=True)
 	train_parser.add_argument("--delimiter", help="label delimiter", default="|")
 	train_parser.add_argument("--detection_type", help="type (object_detection | image_classification)", default="image_classification")
 	
 	#add subparser for 'list-labels'
-	list_labels_parser = subparsers.add_parser('list-labels', help='List all the labels that are available at ImageMonkey')
+	list_labels_parser = subparsers.add_parser('list-labels', help='list all labels that are available at ImageMonkey')
 
 	args = parser.parse_args()
 
