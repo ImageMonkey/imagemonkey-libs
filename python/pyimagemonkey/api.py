@@ -27,6 +27,12 @@ class Rectangle(object):
 		self._width = width
 		self._height = height
 
+		self._points = []
+		self._points.append(PolyPoint(left, top))
+		self._points.append(PolyPoint(left + width, top))
+		self._points.append(PolyPoint(left, top + height))
+		self._points.append(PolyPoint(left + width, top + height))
+
 	@property
 	def top(self):
 		return self._top
@@ -58,6 +64,10 @@ class Rectangle(object):
 			height = rect.height
 
 		return Rectangle(top, left, width, height)
+
+	@property
+	def points(self):
+		return self._points
 
 
 
@@ -128,6 +138,24 @@ class Image(object):
 		self._uuid = uuid
 		self._width = width
 		self._height = height
+		self._path = None
+		self._folder = None
+
+	@property
+	def path(self):
+		return self._path
+
+	@path.setter
+	def path(self, path):
+		self._path = path
+
+	@property
+	def folder(self):
+		return self._folder
+
+	@folder.setter
+	def folder(self, folder):
+		self._folder = folder
 
 	@property
 	def uuid(self):
@@ -153,6 +181,10 @@ class Annotation(object):
 	@property
 	def label(self):
 		return self._label
+
+	@property
+	def data(self):
+		return self._data
 
 
 
@@ -253,9 +285,7 @@ class API(object):
 		data = r.json()
 		return _parse_result(data, min_probability)
 
-	def download_image(self, uuid, folder):
-		extension = ".jpg"
-
+	def download_image(self, uuid, folder, extension=".jpg"):
 		if not os.path.isdir(folder):
 			raise ImageMonkeyGeneralError("folder %s doesn't exist" %(folder,))
 
