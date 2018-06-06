@@ -20,12 +20,72 @@ class PolyPoint(object):
 	def y(self):
 		return self._y
 
+def _rotate_point(point, angle, center_point=PolyPoint(0, 0)):
+    """Rotates a point around center_point(origin by default)
+    Angle is in degrees.
+    Rotation is counter-clockwise
+    """
+    angle_rad = radians(angle % 360)
+    # Shift the point so that center_point becomes the origin
+    new_point = (point.x - center_point.x, point.y - center_point.y)
+    new_point = (new_point.x * cos(angle_rad) - new_point.y * sin(angle_rad),
+                 new_point.x * sin(angle_rad) + new_point.y * cos(angle_rad))
+    # Reverse the shifting we have done
+    new_point = (new_point.x + center_point.x, new_point.y + center_point.y)
+    return new_point
+
+def _rotate_polygon(polygon, angle, center_point=PolyPoint(0, 0)):
+    """Rotates the given polygon which consists of corners represented as (x,y)
+    around center_point (origin by default)
+    Rotation is counter-clockwise
+    Angle is in degrees
+    """
+    rotated_polygon = []
+    for p in polygon:
+        rotated_p = rotate_point(p, angle, center_point)
+        rotated_polygon.append(rotated_p)
+    return rotated_polygon
+
+class Ellipse(object):
+	def __init__(self, left, top, rx, ry):
+		self._left = left
+		self._top = top
+		self._rx = rx
+		self._ry = ry
+		self._angle = 0
+
+	@property
+	def rx(self):
+		return self._rx
+
+	@property
+	def ry(self):
+		return self._ry
+
+	@property
+	def left(self):
+		return self._left
+
+	@property
+	def top(self):
+		return self._top
+
+
+	@property
+	def angle(self):
+		return self._angle
+
+	@angle.setter
+	def angle(self, angle):
+		self._angle = angle
+
 class Rectangle(object):
 	def __init__(self, top, left, width, height):
 		self._top = top
 		self._left = left
 		self._width = width
 		self._height = height
+		self._angle = 0
 
 		self._points = []
 		self._points.append(PolyPoint(left, top))
@@ -66,7 +126,25 @@ class Rectangle(object):
 		return Rectangle(top, left, width, height)
 
 	@property
-	def points(self):
+	def center(self):
+		return PolyPoint((left + (width/2)), (top + (height/2)))
+
+	@property
+	def angle(self):
+		return self._angle
+
+	@angle.setter
+	def angle(self, angle):
+		self._angle = angle
+
+	@property
+	def scaled_points(self):
+		if self._angle != 0:
+			return _rotate_polygon(self._points, self._angle, self.center)
+		return self._points
+
+	@property
+	def points(self):			
 		return self._points
 
 
@@ -222,13 +300,23 @@ def _parse_result(data, min_probability):
 		for raw_annotation in raw_annotations:
 			if(raw_annotation["type"] == "polygon"):
 				polygon = Polygon(raw_annotation["points"])
-				polygon.angle = raw_annotation["angle"]
+				if "angle" in raw_annotation:
+					polygon.angle = raw_annotation["angle"]
 				annotation = Annotation(raw_annotation["label"], polygon)
 				annotations.append(annotation)
 			if(raw_annotation["type"] == "rect"):
 				rect = Rectangle(raw_annotation["top"], raw_annotation["left"], raw_annotation["width"], raw_annotation["height"])
+				if "angle" in raw_annotation:
+					rect.angle = raw_annotation["angle"]
 				annotation = Annotation(raw_annotation["label"], rect)
 				annotations.append(annotation)
+			if(raw_annotation["type"] == "ellipse"):
+				ellipse = Ellipse(raw_annotation["left"], raw_annotation["top"], raw_annotation["rx"], raw_annotation["ry"])
+				if "angle" in raw_annotation:
+					ellipse.angle = raw_annotation["angle"]
+				annotation = Annotation(raw_annotation["label"], ellipse)
+				annotations.append(annotation)
+
 		for raw_validation in raw_validations:
 			validation_probability = 0
 			try:

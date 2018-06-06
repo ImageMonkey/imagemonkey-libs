@@ -30,13 +30,16 @@ class ImageMonkeyConfig(Config):
     # Skip detections with < 90% confidence
     DETECTION_MIN_CONFIDENCE = 0.9
 
-    IMAGE_MIN_DIM = 256 #800
-    IMAGE_MAX_DIM = 320 #1024
+    #IMAGE_MIN_DIM = 256 #800
+    #IMAGE_MAX_DIM = 320 #1024
 
-    def __init__(self, num_classes):
+    def __init__(self, num_classes, num_gpus, min_image_dimension, max_image_dimension):
         #set NUM_CLASSES before calling base class
         #otherwise it won't work
         self.NUM_CLASSES = num_classes + 1 #(num of classes +1 for background)
+        self.GPU_COUNT = num_gpus
+        self.IMAGE_MIN_DIM = min_image_dimension
+        self.IMAGE_MAX_DIM = max_image_dimension
         super().__init__() 
 
 class ImageMonkeyDataset(utils.Dataset):
@@ -84,19 +87,28 @@ class ImageMonkeyDataset(utils.Dataset):
                 log.Debug("Skipping imagemonkey annotation with label %s as not in labels to train" %(annotation.label))
                 continue
 
-            xvals = []
-            yvals = []
-            polypoints = annotation.data.points
-            for polypoint in polypoints:
-                xvals.append(polypoint.x)
-                yvals.append(polypoint.y)
-
             #create n-dimensional mask with zeros
             mask = np.zeros([image_info["height"], image_info["width"], len(annotations)],
                         dtype=np.uint8)
-            # Get indexes of pixels inside the polygon and set them to 1
-            rr, cc = skimage.draw.polygon(yvals, xvals)
-            mask[rr, cc, i] = 1
+
+            if type(annotation) is Ellipse:
+                skimage.draw.ellipse(annotation.left + annotation.rx, annotation.top + annotation.ry, rotation=math.radians(annotation.angle))
+            elif type(annotation) is Rectangle or type(annotation) is Polygon:
+                polypoints = None
+                if type(annotation) is Rectangle:
+                    polypoints = annotation.data.scaled_points
+                else:
+                    polypoints = annotation.data.points
+
+                xvals = []
+                yvals = []
+                for polypoint in polypoints:
+                    xvals.append(polypoint.x)
+                    yvals.append(polypoint.y)
+
+                # Get indexes of pixels inside the polygon and set them to 1
+                rr, cc = skimage.draw.polygon(xvals, yvals)
+                mask[rr, cc, i] = 1
 
             class_ids.append(self.class_names.index(annotation.label)) #get class id from label
 
@@ -201,8 +213,9 @@ class MaskRcnnTrainer(Trainer):
 
         return res
 
-    def train(self, labels, min_probability=0.8):
-        config = ImageMonkeyConfig(len(labels))
+    def train(self, labels, min_probability=0.8, num_gpus=1, 
+                min_image_dimension=800, max_image_dimension=1024):
+        config = ImageMonkeyConfig(len(labels), num_gpus, min_image_dimension, max_image_dimension)
         config.display()
 
         self._model = modellib.MaskRCNN(mode="training", config=config,
