@@ -4,6 +4,7 @@ import json
 import datetime
 import numpy as np
 import skimage
+import shutil
 
 from pyimagemonkey.api import *
 from pyimagemonkey.exceptions import *
