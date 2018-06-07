@@ -35,11 +35,11 @@ RUN cd ~/
 
 
 # TODO REMOVE ME AGAIN
-COPY pyimagemonkey/* /home/imagemonkey/imagemonkey-libs/python/pyimagemonkey/
-COPY pyimagemonkey/scripts/monkey.py /home/imagemonkey/imagemonkey-libs/python/pyimagemonkey/scripts/
-RUN dos2unix /home/imagemonkey/imagemonkey-libs/python/pyimagemonkey/scripts/monkey.py
-RUN mkdir -p /tmp2
-RUN rm /home/imagemonkey/bin/monkey
-RUN ln -s /home/imagemonkey/imagemonkey-libs/python/pyimagemonkey/scripts/monkey.py /home/imagemonkey/bin/monkey
-RUN chmod +x /home/imagemonkey/bin/monkey
+#COPY pyimagemonkey/* /home/imagemonkey/imagemonkey-libs/python/pyimagemonkey/
+#COPY pyimagemonkey/scripts/monkey.py /home/imagemonkey/imagemonkey-libs/python/pyimagemonkey/scripts/
+#RUN dos2unix /home/imagemonkey/imagemonkey-libs/python/pyimagemonkey/scripts/monkey.py
+#RUN mkdir -p /tmp2
+#RUN rm /home/imagemonkey/bin/monkey
+#RUN ln -s /home/imagemonkey/imagemonkey-libs/python/pyimagemonkey/scripts/monkey.py /home/imagemonkey/bin/monkey
+#RUN chmod +x /home/imagemonkey/bin/monkey
 
