@@ -1,6 +1,7 @@
 import os
 from pyimagemonkey.exceptions import *
 from pyimagemonkey.api import *
+from pyimagemonkey.type import *
 import logging
 import shutil
 import subprocess
@@ -29,10 +30,6 @@ def _group_annotations_per_label(annotations):
 			result[annotation.label] = [annotation]
 
 	return result
-
-class Type(enum.Enum):
-	OBJECT_DETECTION = 0
-	IMAGE_CLASSIFICATION = 1
 
 class ProductType(enum.Enum):
 	TENSORFLOW = 0
