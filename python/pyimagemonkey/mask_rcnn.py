@@ -26,7 +26,7 @@ class ImageMonkeyConfig(Config):
     IMAGES_PER_GPU = 1
 
     # Number of training steps per epoch
-    STEPS_PER_EPOCH = 100
+    #STEPS_PER_EPOCH = 100
 
     # Skip detections with < 90% confidence
     DETECTION_MIN_CONFIDENCE = 0.9
@@ -34,16 +34,30 @@ class ImageMonkeyConfig(Config):
     #IMAGE_MIN_DIM = 256 #800
     #IMAGE_MAX_DIM = 320 #1024
 
-    def __init__(self, num_classes, num_gpus, min_image_dimension, max_image_dimension):
+    def __init__(self, num_classes, num_gpus, min_image_dimension, max_image_dimension, 
+                    steps_per_epoch, validation_steps):
         #set NUM_CLASSES before calling base class
         #otherwise it won't work
         self.NUM_CLASSES = num_classes + 1 #(num of classes +1 for background)
         self.GPU_COUNT = num_gpus
         self.IMAGE_MIN_DIM = min_image_dimension
         self.IMAGE_MAX_DIM = max_image_dimension
+        self.STEPS_PER_EPOCH = steps_per_epoch #Number of training steps per epoch
+        self.VALIDATION_STEPS = validation_steps #Number of validation steps
         super().__init__() 
 
 class ImageMonkeyDataset(utils.Dataset):
+
+    def _add_me(self, ctr, mode):
+        m = 3 #split up dataset; 30% validation set, 70% training set
+        if (ctr%3) == 0:
+            if mode == "validation":
+                return True
+        else:
+            if mode == "training":
+                return True
+        return False
+
     def load(self, entries, labels, mode):
         """Load a subset of the ImageMonkey dataset.
         subset: Subset to load: train or val
@@ -58,22 +72,24 @@ class ImageMonkeyDataset(utils.Dataset):
 
         # Train or validation dataset?
         assert mode in ["training", "validation"]
-        #TODO: split up data in training & validation
+        
 
-
+        ctr = 0
         for entry in entries:
-            img = entry.image
+            ctr += 1
+            if self._add_me(ctr, mode):
+                img = entry.image
 
-            annotations = entry.annotations
-            self.add_image(
-                "imagemonkey",
-                image_id=img.uuid,
-                path=img.path,
-                width=img.width,
-                height=img.height,
-                annotations=annotations,
-                labels=labels
-            )
+                annotations = entry.annotations
+                self.add_image(
+                    "imagemonkey",
+                    image_id=img.uuid,
+                    path=img.path,
+                    width=img.width,
+                    height=img.height,
+                    annotations=annotations,
+                    labels=labels
+                )
 
     def load_mask(self, image_id):
         # If not a ImageMonkey dataset image, delegate to parent class.
@@ -215,8 +231,10 @@ class MaskRcnnTrainer(Trainer):
         return res
 
     def train(self, labels, min_probability=0.8, num_gpus=1, 
-                min_image_dimension=800, max_image_dimension=1024):
-        config = ImageMonkeyConfig(len(labels), num_gpus, min_image_dimension, max_image_dimension)
+                min_image_dimension=800, max_image_dimension=1024, 
+                steps_per_epoch, validation_steps):
+        config = ImageMonkeyConfig(len(labels), num_gpus, min_image_dimension, max_image_dimension, 
+                                    steps_per_epoch, validation_steps)
         config.display()
 
         self._model = modellib.MaskRCNN(mode="training", config=config,

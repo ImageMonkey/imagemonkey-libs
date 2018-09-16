@@ -41,6 +41,8 @@ if __name__ == "__main__":
 	train_parser.add_argument("--num-gpus", help="number of GPUs you want to use for training", required=False, default=None, type=int)
 	train_parser.add_argument("--min-img-size", help="minimal image size", required=False, default=None, type=int)
 	train_parser.add_argument("--max-img-size", help="maximal image size", required=False, default=None, type=int)
+	train_parser.add_argument("--steps-per-epoch", help="training steps per epoch", required=False, default=None, type=int)
+	train_parser.add_argument("--validation-steps", help="validation steps", required=False, default=None, type=int)
 
 	#add subparser for 'list-labels'
 	list_labels_parser = subparsers.add_parser('list-labels', help='list all labels that are available at ImageMonkey')
@@ -75,6 +77,10 @@ if __name__ == "__main__":
 				parser.error('--min-img-size is only allowed when --type=object-segmentation')
 			if args.max_img_size is not None:
 				parser.error('--max-img-size is only allowed when --type=object-segmentation')
+			if args.steps_per_epoch is not None:
+				parser.error('--steps-per-epoch is only allowed when --type=object-segmentation')
+			if args.validation_steps is not None:
+				parser.error('--validation-steps is only allowed when --type=object-segmentation')
 
 			try:
 				tensorflow_trainer = TensorflowTrainer(directory, clear_before_start=True, tf_object_detection_models_path="/tensorflow_models/")
@@ -85,16 +91,23 @@ if __name__ == "__main__":
 			min_img_size = 800
 			max_img_size = 1024
 			num_gpus = 1
+			steps_per_epoch = 100
+			validation_steps = 30
 			if args.num_gpus is not None:
 				num_gpus = args.num_gpus
 			if args.min_img_size is not None:
 				min_img_size = args.min_img_size
 			if args.max_img_size is not None:
 				max_img_size = args.max_img_size
+			if args.steps_per_epoch is not None:
+				steps_per_epoch = args.steps_per_epoch
+			if args.validation_steps is not None:
+				validation_steps = args.validation_steps
 
 			maskrcnn_trainer = MaskRcnnTrainer(directory, model="/home/imagemonkey/models/resnet/v0.2/resnet50_weights_tf_dim_ordering_tf_kernels_notop.h5")
 			maskrcnn_trainer.train(_split_labels(args.labels, args.delimiter), min_probability = 0.8, 
-									num_gpus=num_gpus, min_image_dimension=min_img_size, max_image_dimension=max_img_size)
+									num_gpus=num_gpus, min_image_dimension=min_img_size, max_image_dimension=max_img_size, 
+									steps_per_epoch=steps_per_epoch, validation_steps=validation_steps)
 
 
 	if args.command == "list-labels":
