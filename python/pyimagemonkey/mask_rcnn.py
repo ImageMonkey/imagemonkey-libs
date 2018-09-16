@@ -232,7 +232,7 @@ class MaskRcnnTrainer(Trainer):
 
     def train(self, labels, min_probability=0.8, num_gpus=1, 
                 min_image_dimension=800, max_image_dimension=1024, 
-                steps_per_epoch, validation_steps):
+                steps_per_epoch = 100, validation_steps = 70):
         config = ImageMonkeyConfig(len(labels), num_gpus, min_image_dimension, max_image_dimension, 
                                     steps_per_epoch, validation_steps)
         config.display()

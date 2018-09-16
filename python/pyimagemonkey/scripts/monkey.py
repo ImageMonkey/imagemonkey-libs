@@ -9,6 +9,8 @@ sys.path.insert(1, os.path.join(sys.path[0], ('..' + os.path.sep + "..")))
 
 from pyimagemonkey import API
 from pyimagemonkey import Type
+from pyimagemonkey import TensorflowTrainer
+from pyimagemonkey import MaskRcnnTrainer
 
 log = logging.getLogger(__name__)
 log.addHandler(logging.NullHandler())
@@ -81,9 +83,6 @@ if __name__ == "__main__":
 				parser.error('--validation-steps is only allowed when --type=object-segmentation')
 
 			try:
-				#import only when actually needed. Loading the tensorflow lib is pretty slow, so we should only do that if it's actually needed 
-				from pyimagemonkey import TensorflowTrainer
-
 				tensorflow_trainer = TensorflowTrainer(directory, clear_before_start=True, tf_object_detection_models_path="/tensorflow_models/")
 				tensorflow_trainer.train(_split_labels(args.labels, args.delimiter), min_probability = 0.8, train_type = train_type)
 			except Exception as e: 
@@ -104,9 +103,6 @@ if __name__ == "__main__":
 				steps_per_epoch = args.steps_per_epoch
 			if args.validation_steps is not None:
 				validation_steps = args.validation_steps
-
-			#import only when actually needed. Loading the keras lib is pretty slow, so we should only do that if it's actually needed
-			from pyimagemonkey import MaskRcnnTrainer
 
 			maskrcnn_trainer = MaskRcnnTrainer(directory, model="/home/imagemonkey/models/resnet/v0.2/resnet50_weights_tf_dim_ordering_tf_kernels_notop.h5")
 			maskrcnn_trainer.train(_split_labels(args.labels, args.delimiter), min_probability = 0.8, 
