@@ -300,7 +300,8 @@ class TensorflowTrainer(object):
 		if self._tf_object_detection_models_path is None:
 			raise ImageMonkeyGeneralError("Please provide the base path to your local tensorflow models directory first")
 
-		object_detection_py = self._tf_object_detection_models_path + os.path.sep + "research" + os.path.sep + "object_detection" + os.path.sep + "train.py" 
+		object_detection_py = (self._tf_object_detection_models_path + os.path.sep + 
+								"research" + os.path.sep + "object_detection" + os.path.sep + "legacy" + os.path.sep + "train.py")
 		if not os.path.exists(object_detection_py):
 			raise ImageMonkeyGeneralError("Couldn't find train.py in %s. Is your tensorflow models base directory correctly set?" %(object_detection_py,))
 
@@ -318,28 +319,28 @@ class TensorflowTrainer(object):
 		self._run_command(cmd, cwd=self._object_detection_output_tmp_dir, env=my_env)
 
 	def _handle_checkpoint_download_progress(self, count, block_size, total_size):
-	    print("[%d/%d] Downloading Checkpoint" %(block_size, total_size))
+		percent = int(count * block_size * 100 / total_size)
+	    print("[%d] Downloading Checkpoint" %(percent,))
 
 	def _download_checkpoint_if_not_exist(self, dataset_name):
 		url = "http://download.tensorflow.org/models/object_detection/%s.tar.gz" %(dataset_name,)
 
-		log.info("Downloading %s" %(url,))
-
 		path_without_suffix = self._checkpoints_dir + os.path.sep + dataset_name
 		path = path_without_suffix + ".tar.gz"
 		if not os.path.exists(path):
+			log.info("Checkpoint doesn't exist...downloading %s" %(url,))
 			urllib.request.urlretrieve(url, path, self._handle_checkpoint_download_progress)
 			#TODO: handle urllib exception + remove partialy downloaded file in that case
 		else:
 			log.info("Checking if checkpoint exists...found")
 
-			#check if checkpoints archive is already extracted
-			if helper.directory_exists(path_without_suffix):
-				if os.listdir(path_without_suffix) == []:
-					helper.extract_tar_gz(path, self._checkpoints_dir)
-			else:
-				log.info("Extracting object detection checkpoint")
+		#check if checkpoints archive is already extracted
+		if helper.directory_exists(path_without_suffix):
+			if os.listdir(path_without_suffix) == []:
 				helper.extract_tar_gz(path, self._checkpoints_dir)
+		else:
+			log.info("Extracting object detection checkpoint")
+			helper.extract_tar_gz(path, self._checkpoints_dir)
 
 	def _copy_checkpoint_to_training_dir(self, dataset_name):
 		log.info("Copying checkpoint to training directory")
@@ -368,10 +369,12 @@ class TensorflowTrainer(object):
 			grouped_annotations = _group_annotations_per_label(entry.annotations)
 			for key, annotations in grouped_annotations.items():
 				path = self._images_dir + os.path.sep + key + os.path.sep + entry.image.uuid + ".jpg"
-				img = Image.open(path).convert('RGB')
-				tfrecord = self._create_tf_entry(categories, img, key, entry.image.uuid, annotations)
-				if tfrecord is not None:
-					writer.write(tfrecord.SerializeToString())
+				if os.path.exists(path):
+					img = Image.open(path).convert('RGB')
+					tfrecord = self._create_tf_entry(categories, img, key, entry.image.uuid, annotations)
+					if tfrecord is not None:
+						print("write")
+						writer.write(tfrecord.SerializeToString())
 		writer.close()
 
 	def _create_tf_entry(self, categories, img, label, filename, annotations):
@@ -390,10 +393,10 @@ class TensorflowTrainer(object):
 
 		for annotation in annotations:
 			rect = None
-			if type(annotation) is Rectangle: #currently we only support Rect annotations, TODO: change me
-				rect = annotation
-			elif type(annotation) is Polygon:
-				rect = annotation.rect
+			if type(annotation.data) is Rectangle: #currently we only support Rect annotations, TODO: change me
+				rect = annotation.data
+			elif type(annotation.data) is Polygon:
+				rect = annotation.data.rect
 
 
 			if rect is not None:

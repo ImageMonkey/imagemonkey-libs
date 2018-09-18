@@ -103,6 +103,9 @@ class Rectangle(object):
 	def width(self):
 		return self._width
 	@property
+	def height(self):
+		return self._height
+
 	def scaled(self, rect):
 		if not isinstance(rect, Rectangle):
 			raise ValueError("expected rectangle")
