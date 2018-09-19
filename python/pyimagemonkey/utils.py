@@ -11,7 +11,7 @@ import pip
 import sys
 import enum
 import tensorflow as tf
-#import dataset_util
+import dataset_util
 from PIL import Image
 import io
 import urllib
@@ -320,7 +320,7 @@ class TensorflowTrainer(object):
 
 	def _handle_checkpoint_download_progress(self, count, block_size, total_size):
 		percent = int(count * block_size * 100 / total_size)
-	    print("[%d] Downloading Checkpoint" %(percent,))
+		print("[%d] Downloading Checkpoint" %(percent,))
 
 	def _download_checkpoint_if_not_exist(self, dataset_name):
 		url = "http://download.tensorflow.org/models/object_detection/%s.tar.gz" %(dataset_name,)
@@ -354,11 +354,15 @@ class TensorflowTrainer(object):
 
 
 	def _write_tf_pipeline_config(self, categories):
-		fpath = "model.ckpt"
 		with open(self._object_detection_pipeline_config_path, "w") as f:
 			cfg = tf_pipeline_configs.SSD_MOBILENET_V1
 			cfg = cfg.replace("num_classes: xxx", "num_classes: %d" %(len(categories)))
-			cfg = cfg.replace("fine_tune_checkpoint: xxx", "fine_tune_checkpoint: \"%s\"" %(fpath,))
+
+			#tensorflow doesn't like backslashes in the pipeline config, so replace
+			#backslashes with forward slash.
+			unix_path = self._object_detection_output_tmp_dir.replace('\\', '/')
+			
+			cfg = cfg.replace("PATH_TO_BE_CONFIGURED", unix_path)
 			f.write(cfg)
 		
 
@@ -373,7 +377,7 @@ class TensorflowTrainer(object):
 					img = Image.open(path).convert('RGB')
 					tfrecord = self._create_tf_entry(categories, img, key, entry.image.uuid, annotations)
 					if tfrecord is not None:
-						print("write")
+						log.debug("Adding image %s to tfrecord file" %(entry.image.uuid,))
 						writer.write(tfrecord.SerializeToString())
 		writer.close()
 
@@ -418,7 +422,8 @@ class TensorflowTrainer(object):
 		if((len(xmins) == 0) or (len(xmaxs) == 0) or (len(ymins) == 0) or (len(ymaxs) == 0)):
 			return None
  
-		classes = [(categories.index(label) + 1)] #class indexes start with 1
+		classes = [(categories.index(label) + 1)] * len(xmins) #class indexes start with 1
+		labels = [label.encode('utf8')] * len(xmins)
 
 		tf_example = tf.train.Example(features=tf.train.Features(feature={
 	      'image/height': dataset_util.int64_feature(height),
@@ -431,7 +436,7 @@ class TensorflowTrainer(object):
 	      'image/object/bbox/xmax': dataset_util.float_list_feature(xmaxs),
 	      'image/object/bbox/ymin': dataset_util.float_list_feature(ymins),
 	      'image/object/bbox/ymax': dataset_util.float_list_feature(ymaxs),
-	      'image/object/class/text': dataset_util.bytes_list_feature([label.encode('utf8')]),
+	      'image/object/class/text': dataset_util.bytes_list_feature(labels),
 	      'image/object/class/label': dataset_util.int64_list_feature(classes),
 		}))
 		return tf_example

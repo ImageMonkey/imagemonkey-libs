@@ -148,8 +148,12 @@ train_config: {
       epsilon: 1.0
     }
   }
-  fine_tune_checkpoint: xxx
+  fine_tune_checkpoint: "PATH_TO_BE_CONFIGURED/model.ckpt"
   from_detection_checkpoint: true
+  # Note: The below line limits the training process to 200K steps, which we
+  # empirically found to be sufficient enough to train the pets dataset. This
+  # effectively bypasses the learning rate schedule (the learning rate will
+  # never decay). Remove the below line to train indefinitely.
   num_steps: 200000
   data_augmentation_options {
     random_horizontal_flip {
@@ -163,21 +167,23 @@ train_config: {
 
 train_input_reader: {
   tf_record_input_reader {
-    input_path: "data.tfrecord"
+    input_path: "PATH_TO_BE_CONFIGURED/data.tfrecord"
   }
-  label_map_path: "label_map.pbtxt"
+  label_map_path: "PATH_TO_BE_CONFIGURED/label_map.pbtxt"
 }
 
 eval_config: {
-  num_examples: 2000
+  num_examples: 8000
+  # Note: The below line limits the evaluation process to 10 evaluations.
+  # Remove the below line to evaluate indefinitely.
   max_evals: 10
 }
 
 eval_input_reader: {
   tf_record_input_reader {
-    input_path: "data.tfrecord"
+    input_path: "PATH_TO_BE_CONFIGURED/data.tfrecord"
   }
-  label_map_path: "label_map.pbtxt"
+  label_map_path: "PATH_TO_BE_CONFIGURED/label_map.pbtxt"
   shuffle: false
   num_readers: 1
 }
