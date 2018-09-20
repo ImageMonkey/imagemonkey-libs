@@ -347,8 +347,12 @@ class API(object):
 
 
 
-	def labels(self):
-		url =  self._base_url + "v" + str(self._api_version) + "/label"
+	def labels(self, show_accessors=False):
+		url = None
+		if show_accessors:
+			url =  self._base_url + "v" + str(self._api_version) + "/label/accessors"
+		else:
+			url =  self._base_url + "v" + str(self._api_version) + "/label"
 		r = requests.get(url)
 		if(r.status_code == 500):
 			raise InternalImageMonkeyAPIError("Could not perform operation, please try again later")

@@ -35,7 +35,7 @@ if __name__ == "__main__":
 
 	#add subparser for 'train'
 	train_parser = subparsers.add_parser('train', help='train your own model')
-	train_parser.add_argument('--labels', help='list of ImageMonkey labels that you want to train your model on', required=True)
+	train_parser.add_argument('--labels', help='list of ImageMonkey labels that you want to train your model on. default: all labels', default=None, required=False)
 	train_parser.add_argument("--delimiter", help="label delimiter", default="|")
 	train_parser.add_argument("--type", help="type (object-detection | image-classification | object-segmentation)", required=True)
 	train_parser.add_argument("--num-gpus", help="number of GPUs you want to use for training", required=False, default=None, type=int)
@@ -70,6 +70,17 @@ if __name__ == "__main__":
 
 		_create_dir_if_not_exists(directory)
 
+		labels = None
+		if args.labels is None:
+			labels = imagemonkey_api.labels(True)
+		else:
+			labels = _split_labels(args.labels, args.delimiter)
+
+		if labels is None:
+			print("Please provide a labels list first!")
+			sys.exit(1)
+
+
 		if train_type == Type.OBJECT_DETECTION or train_type == Type.IMAGE_CLASSIFICATION:
 			if args.num_gpus is not None:
 				parser.error('--num-gpus is only allowed when --type=object-segmentation')
@@ -84,7 +95,7 @@ if __name__ == "__main__":
 
 			try:
 				tensorflow_trainer = TensorflowTrainer(directory, clear_before_start=True, tf_object_detection_models_path="/tensorflow_models/")
-				tensorflow_trainer.train(_split_labels(args.labels, args.delimiter), min_probability = 0.8, train_type = train_type)
+				tensorflow_trainer.train(labels, min_probability = 0.8, train_type = train_type)
 			except Exception as e: 
 				print(e)
 		else:
@@ -105,8 +116,7 @@ if __name__ == "__main__":
 				validation_steps = args.validation_steps
 
 			maskrcnn_trainer = MaskRcnnTrainer(directory, model="/home/imagemonkey/models/resnet/v0.2/resnet50_weights_tf_dim_ordering_tf_kernels_notop.h5")
-			maskrcnn_trainer.train(_split_labels(args.labels, args.delimiter), min_probability = 0.8, 
-									num_gpus=num_gpus, min_image_dimension=min_img_size, max_image_dimension=max_img_size, 
+			maskrcnn_trainer.train(labels, min_probability = 0.8, num_gpus=num_gpus, min_image_dimension=min_img_size, max_image_dimension=max_img_size, 
 									steps_per_epoch=steps_per_epoch, validation_steps=validation_steps)
 
 

@@ -15,7 +15,11 @@ RUN mkdir -p /home/imagemonkey/bin
 
 RUN git clone https://github.com/bbernhard/imagemonkey-libs.git /home/imagemonkey/imagemonkey-libs
 
-RUN git clone https://github.com/tensorflow/models.git tensorflow_models
+# the tensorflow developers are changing/deprecating stuff so frequently that we can't use the master branch
+# so we checkout an (arbitrary but fixed) specific commit to get a reproducible docker image.
+RUN git clone https://github.com/tensorflow/models.git tensorflow_models \
+	&& cd tensorflow_models && git checkout 8ffcc2fa3287d031a228860ce574f34c0718cc89 \
+	&& cd ~
 
 RUN git clone https://github.com/matterport/Mask_RCNN /home/imagemonkey/mask_rcnn
 
@@ -45,3 +49,5 @@ RUN cd /tmp && wget -O protoc.zip https://github.com/protocolbuffers/protobuf/re
 RUN cd /tmp && unzip protoc.zip -d /tmp/protoc
 RUN cd /tensorflow_models/research/ \
 	&& /tmp/protoc/bin/protoc object_detection/protos/*.proto --python_out=. 
+
+RUN export PYTHONPATH=$PYTHONPATH:/tensorflow_models/research/object_detection/utils
