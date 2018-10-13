@@ -373,6 +373,7 @@ class TensorflowTrainer(object):
 
 
 	def _write_tf_record_file(self, categories, entries):
+		is_empty = True
 		writer = tf.python_io.TFRecordWriter(self._object_detection_tfrecord_path)
 		for entry in entries:
 			grouped_annotations = _group_annotations_per_label(entry.annotations)
@@ -382,9 +383,13 @@ class TensorflowTrainer(object):
 					img = Image.open(path).convert('RGB')
 					tfrecord = self._create_tf_entry(categories, img, key, entry.image.uuid, annotations)
 					if tfrecord is not None:
+						is_empty = False
 						log.debug("Adding image %s to tfrecord file" %(entry.image.uuid,))
 						writer.write(tfrecord.SerializeToString())
 		writer.close()
+
+		if is_empty:
+			raise raise ImageMonkeyGeneralError("Nothing to train (tfrecord file empty)") 
 
 	def _create_tf_entry(self, categories, img, label, filename, annotations):
 		imageFormat = b'jpg'
@@ -411,10 +416,31 @@ class TensorflowTrainer(object):
 			if rect is not None:
 				scaled_rect = rect.scaled(Rectangle(0, 0, width, height)) #scale to image dimension in case annotation exceeds image width/height
 
+				if scaled_rect.left < 0:
+					raise ImageMonkeyGeneralError("scaled rect left dimension invalid! (<0)")
+				if scaled_rect.top < 0:
+					raise ImageMonkeyGeneralError("scaled rect top dimension invalid! (<0)")
+				if scaled_rect.width < 0:
+					raise ImageMonkeyGeneralError("scaled rect width dimension invalid! (<0)")
+				if scaled_rect.height < 0:
+					raise ImageMonkeyGeneralError("scaled rect height dimension invalid! (<0)")
+
+				if (scaled_rect.left + scaled_rect.width) > width:
+					raise ImageMonkeyGeneralError("bounding box width > image width!")
+				if (scaled_rect.top + scaled_rect.height) > height:
+					raise ImageMonkeyGeneralError("bounding box height > image height!")
+
 				xmin = scaled_rect.left / float(width)
 				xmax = (scaled_rect.left + scaled_rect.width) / float(width)
 				ymin = scaled_rect.top / float(height)
 				ymax = (scaled_rect.top + scaled_rect.height) / float(height)
+
+				#sanity checks
+				if xmin > xmax:
+					raise ImageMonkeyGeneralError("xmin > xmax!")
+
+				if ymin > ymax:
+					raise ImageMonkeyGeneralError("ymin > ymax!")
 
 				xmins.append(xmin)
 				xmaxs.append(xmax)

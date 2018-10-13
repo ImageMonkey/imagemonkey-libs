@@ -50,4 +50,7 @@ RUN cd /tmp && unzip protoc.zip -d /tmp/protoc
 RUN cd /tensorflow_models/research/ \
 	&& /tmp/protoc/bin/protoc object_detection/protos/*.proto --python_out=. 
 
-RUN export PYTHONPATH=$PYTHONPATH:/tensorflow_models/research/object_detection/utils
+ENV PYTHONPATH $PYTHONPATH:/tensorflow_models/research/object_detection/utils
+
+
+#RUN export PYTHONPATH=$PYTHONPATH:/tensorflow_models/research/object_detection/utils
