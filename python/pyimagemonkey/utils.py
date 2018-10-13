@@ -389,7 +389,7 @@ class TensorflowTrainer(object):
 		writer.close()
 
 		if is_empty:
-			raise raise ImageMonkeyGeneralError("Nothing to train (tfrecord file empty)") 
+			raise ImageMonkeyGeneralError("Nothing to train (tfrecord file empty)") 
 
 	def _create_tf_entry(self, categories, img, label, filename, annotations):
 		imageFormat = b'jpg'

@@ -113,10 +113,14 @@ class Rectangle(object):
 		top = self._top
 		if self._top > rect.top:
 			top = rect.top
+		if top < 0:
+			top = 0
 
 		left = self._left
 		if self._left > rect.left:
 			left = rect.left
+		if left < 0:
+			left = 0
 
 		width = self._width
 		if self._width > rect.width:
