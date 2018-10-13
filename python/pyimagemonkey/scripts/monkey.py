@@ -43,6 +43,7 @@ if __name__ == "__main__":
 	train_parser.add_argument("--max-img-size", help="maximal image size", required=False, default=None, type=int)
 	train_parser.add_argument("--steps-per-epoch", help="training steps per epoch", required=False, default=None, type=int)
 	train_parser.add_argument("--validation-steps", help="validation steps", required=False, default=None, type=int)
+	train_parser.add_argument("--learning-rate", help="learning rate", required=False, default=None)
 
 	#add subparser for 'list-labels'
 	list_labels_parser = subparsers.add_parser('list-labels', help='list all labels that are available at ImageMonkey')
@@ -92,10 +93,12 @@ if __name__ == "__main__":
 				parser.error('--steps-per-epoch is only allowed when --type=object-segmentation')
 			if args.validation_steps is not None:
 				parser.error('--validation-steps is only allowed when --type=object-segmentation')
+			if (args.learning_rate is not None) and (train_type == Type.IMAGE_CLASSIFICATION):
+				parser.error('--learning-rate is only allowed when --type=object-detection')
 
 			try:
 				tensorflow_trainer = TensorflowTrainer(directory, clear_before_start=True, tf_object_detection_models_path="/tensorflow_models/")
-				tensorflow_trainer.train(labels, min_probability = 0.8, train_type = train_type)
+				tensorflow_trainer.train(labels, min_probability = 0.8, train_type = train_type, learning_rate=args.learning_rate)
 			except Exception as e: 
 				print(e)
 		else:
@@ -114,6 +117,8 @@ if __name__ == "__main__":
 				steps_per_epoch = args.steps_per_epoch
 			if args.validation_steps is not None:
 				validation_steps = args.validation_steps
+			if args.learning_rate is not None:
+				parser.error('--learning-rate is only allowed when --type=object-detection')
 
 			maskrcnn_trainer = MaskRcnnTrainer(directory, model="/home/imagemonkey/models/resnet/v0.2/resnet50_weights_tf_dim_ordering_tf_kernels_notop.h5")
 			maskrcnn_trainer.train(labels, min_probability = 0.8, num_gpus=num_gpus, min_image_dimension=min_img_size, max_image_dimension=max_img_size, 

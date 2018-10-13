@@ -277,7 +277,7 @@ class TensorflowTrainer(object):
 		return res
 
 
-	def train(self, labels, min_probability = 0.8, train_type=Type.IMAGE_CLASSIFICATION):
+	def train(self, labels, min_probability = 0.8, train_type=Type.IMAGE_CLASSIFICATION, learning_rate = None):
 		if train_type == Type.IMAGE_CLASSIFICATION:
 			self._export_data_and_download_images(labels, min_probability)
 			self._image_classification_sanity_check(labels)
@@ -285,15 +285,15 @@ class TensorflowTrainer(object):
 		elif train_type == Type.OBJECT_DETECTION:
 			data = self._export_data_and_download_images(labels, min_probability)
 
-			self._train_object_detection(labels, data)
+			self._train_object_detection(labels, data, learning_rate)
 
 
-	def _train_object_detection(self, categories, entries):
+	def _train_object_detection(self, categories, entries, learning_rate):
 		self._download_checkpoint_if_not_exist("ssd_mobilenet_v1_coco_11_06_2017")
 		self._copy_checkpoint_to_training_dir("ssd_mobilenet_v1_coco_11_06_2017")
 		self._write_tf_record_file(categories, entries)
 		self._write_labels_map(categories)
-		self._write_tf_pipeline_config(categories)
+		self._write_tf_pipeline_config(categories, learning_rate)
 		self._start_object_detection()
 
 	def _start_object_detection(self):
@@ -353,10 +353,15 @@ class TensorflowTrainer(object):
 				shutil.copy(file_name, dest_file_name)
 
 
-	def _write_tf_pipeline_config(self, categories):
+	def _write_tf_pipeline_config(self, categories, learning_rate):
 		with open(self._object_detection_pipeline_config_path, "w") as f:
 			cfg = tf_pipeline_configs.SSD_MOBILENET_V1
 			cfg = cfg.replace("num_classes: xxx", "num_classes: %d" %(len(categories)))
+
+			if learning_rate is None: #default initial learning rate
+				cfg = cfg.replace("INITIAL_LEARNING_RATE", "0.004")
+			else:
+				cfg = cfg.replace("INITIAL_LEARNING_RATE", learning_rate)
 
 			#tensorflow doesn't like backslashes in the pipeline config, so replace
 			#backslashes with forward slash.
