@@ -125,10 +125,14 @@ class Rectangle(object):
 		width = self._width
 		if self._width > rect.width:
 			width = rect.width
+		if width < 0:
+			width = 0
 
 		height = self._height
 		if self._height > rect.height:
 			height = rect.height
+		if height < 0:
+			height = 0
 
 		return Rectangle(top, left, width, height)
 

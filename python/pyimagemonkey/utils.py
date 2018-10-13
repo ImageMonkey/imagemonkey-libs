@@ -442,6 +442,9 @@ class TensorflowTrainer(object):
 				if ymin > ymax:
 					raise ImageMonkeyGeneralError("ymin > ymax!")
 
+				if (xmin == 0) and (xmax == 0) and (ymin == 0) and (ymax == 0):
+					continue #skip bounding boxes that are 0
+
 				xmins.append(xmin)
 				xmaxs.append(xmax)
 				ymins.append(ymin)
