@@ -97,13 +97,13 @@ class ImageMonkeyDataset(utils.Dataset):
         if image_info["source"] != "imagemonkey":
             return super(self.__class__, self).load_mask(image_id)
 
-        log.Debug("Loading mask for image with id %s" %(image_id))
+        log.debug("Loading mask for image with id %s" %(image_id))
 
         class_ids = []
         annotations = self.image_info[image_id]["annotations"]
         for i, annotation in enumerate(annotations):
             if annotation.label not in self._all_labels:
-                log.Debug("Skipping imagemonkey annotation with label %s as not in labels to train" %(annotation.label))
+                log.debug("Skipping imagemonkey annotation with label %s as not in labels to train" %(annotation.label))
                 continue
 
             #create n-dimensional mask with zeros

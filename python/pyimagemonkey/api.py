@@ -152,7 +152,7 @@ class Ellipse(object):
 		else:
 			ry = self._ry
 
-		return Ellipse(left, top, rx, ry, self._angle):
+		return Ellipse(left, top, rx, ry, self._angle)
 
 
 
