@@ -257,7 +257,7 @@ class Polygon(object):
 
 	@property
 	def points(self):
-		return self._points
+		return PolyPoints(self._points)
 
 	#returns the bounding rectangle
 	@property

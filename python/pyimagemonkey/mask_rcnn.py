@@ -117,7 +117,6 @@ class ImageMonkeyDataset(utils.Dataset):
                 skimage.draw.ellipse(trimmed_ellipse.left + trimmed_ellipse.rx, trimmed_ellipse.top + trimmed_ellipse.ry, 
                                         rotation=math.radians(trimmed_ellipse.angle))
             elif type(annotation.data) is Rectangle or type(annotation.data) is Polygon:
-                polypoints = None
                 polypoints = annotation.data.points
                 trimmed_polypoints = polypoints.trim(Rectangle(0, 0, width, height)) 
 
