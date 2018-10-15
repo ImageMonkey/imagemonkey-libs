@@ -100,25 +100,28 @@ class ImageMonkeyDataset(utils.Dataset):
         log.debug("Loading mask for image with id %s" %(image_id))
 
         class_ids = []
-        annotations = self.image_info[image_id]["annotations"]
+        annotations = image_info["annotations"]
         for i, annotation in enumerate(annotations):
             if annotation.label not in self._all_labels:
                 log.debug("Skipping imagemonkey annotation with label %s as not in labels to train" %(annotation.label))
                 continue
 
             #create n-dimensional mask with zeros
-            mask = np.zeros([image_info["height"], image_info["width"], len(annotations)],
+            mask = np.zeros(image_info["width"], [image_info["height"], len(annotations)],
                         dtype=np.uint8)
 
             if type(annotation.data) is Ellipse:
-                trimmed_ellipse = annotation.data.trim(Rectangle(0, 0, width, height))
+                trimmed_ellipse = annotation.data.trim(Rectangle(0, 0, image_info["width"], image_info["height"]))
 
 
-                skimage.draw.ellipse(trimmed_ellipse.left + trimmed_ellipse.rx, trimmed_ellipse.top + trimmed_ellipse.ry, 
-                                        rotation=math.radians(trimmed_ellipse.angle))
+                rr, cc = skimage.draw.ellipse(trimmed_ellipse.left + trimmed_ellipse.rx, trimmed_ellipse.top + trimmed_ellipse.ry, 
+                                                rotation=math.radians(trimmed_ellipse.angle))
+                mask[rr, cc, i] = 1
+
+
             elif type(annotation.data) is Rectangle or type(annotation.data) is Polygon:
                 polypoints = annotation.data.points
-                trimmed_polypoints = polypoints.trim(Rectangle(0, 0, width, height)) 
+                trimmed_polypoints = polypoints.trim(Rectangle(0, 0, image_info["width"], image_info["height"])) 
 
                 xvals = []
                 yvals = []
