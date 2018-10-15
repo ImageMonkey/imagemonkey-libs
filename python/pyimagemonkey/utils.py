@@ -268,7 +268,7 @@ class TensorflowTrainer(object):
 			if not self._category_dir_exists(label):
 				self._create_category_dir(label)
 
-		res = self._api.export(labels, min_probability)
+		res = self._api.export(labels, min_probability, only_annotated=True)
 		for elem in res:
 			for validation in elem.validations:
 				folder = self._images_dir + os.path.sep + validation.label
@@ -414,26 +414,26 @@ class TensorflowTrainer(object):
 
 
 			if rect is not None:
-				scaled_rect = rect.scaled(Rectangle(0, 0, width, height)) #scale to image dimension in case annotation exceeds image width/height
+				trimmed_rect = rect.trim(Rectangle(0, 0, width, height)) #scale to image dimension in case annotation exceeds image width/height
 
-				if scaled_rect.left < 0:
-					raise ImageMonkeyGeneralError("scaled rect left dimension invalid! (<0)")
-				if scaled_rect.top < 0:
-					raise ImageMonkeyGeneralError("scaled rect top dimension invalid! (<0)")
-				if scaled_rect.width < 0:
-					raise ImageMonkeyGeneralError("scaled rect width dimension invalid! (<0)")
-				if scaled_rect.height < 0:
-					raise ImageMonkeyGeneralError("scaled rect height dimension invalid! (<0)")
+				if trimmed_rect.left < 0:
+					raise ImageMonkeyGeneralError("trimmed rect left dimension invalid! (<0)")
+				if trimmed_rect.top < 0:
+					raise ImageMonkeyGeneralError("trimmed rect top dimension invalid! (<0)")
+				if trimmed_rect.width < 0:
+					raise ImageMonkeyGeneralError("trimmed rect width dimension invalid! (<0)")
+				if trimmed_rect.height < 0:
+					raise ImageMonkeyGeneralError("trimmed rect height dimension invalid! (<0)")
 
-				if (scaled_rect.left + scaled_rect.width) > width:
+				if (trimmed_rect.left + trimmed_rect.width) > width:
 					raise ImageMonkeyGeneralError("bounding box width > image width!")
-				if (scaled_rect.top + scaled_rect.height) > height:
+				if (trimmed_rect.top + trimmed_rect.height) > height:
 					raise ImageMonkeyGeneralError("bounding box height > image height!")
 
-				xmin = scaled_rect.left / float(width)
-				xmax = (scaled_rect.left + scaled_rect.width) / float(width)
-				ymin = scaled_rect.top / float(height)
-				ymax = (scaled_rect.top + scaled_rect.height) / float(height)
+				xmin = trimmed_rect.left / float(width)
+				xmax = (trimmed_rect.left + trimmed_rect.width) / float(width)
+				ymin = trimmed_rect.top / float(height)
+				ymax = (trimmed_rect.top + trimmed_rect.height) / float(height)
 
 				#sanity checks
 				if xmin > xmax:

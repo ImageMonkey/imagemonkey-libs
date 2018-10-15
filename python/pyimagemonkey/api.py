@@ -7,6 +7,8 @@ import logging
 log = logging.getLogger(__name__)
 log.addHandler(logging.NullHandler())
 
+
+
 class PolyPoint(object):
 	def __init__(self, x, y):
 		self._x = x
@@ -20,6 +22,40 @@ class PolyPoint(object):
 	def y(self):
 		return self._y
 
+class PolyPoints(object):
+	def __init__(self, points):
+		self._points = points
+
+
+	def trim(self, rect):
+		if not isinstance(rect, Rectangle):
+			raise ValueError("expected rectangle")
+
+		points = []
+		for p in self._points:
+			x = 0
+			if p.x < 0:
+				x = 0
+			elif p.x > rect.width:
+				x = rect.width
+			else:
+				x = p.x
+
+			y = 0
+			if p.y < 0:
+				y = 0
+			elif p.y > rect.height:
+				x = rect.height
+			else:
+				y = p.y
+
+			points.append(PolyPoint(x, y))
+		return PolyPoints(points)
+
+	@property
+	def points(self):
+		return self._points
+
 def _rotate_point(point, angle, center_point=PolyPoint(0, 0)):
     """Rotates a point around center_point(origin by default)
     Angle is in degrees.
@@ -31,7 +67,7 @@ def _rotate_point(point, angle, center_point=PolyPoint(0, 0)):
     new_point = (new_point.x * cos(angle_rad) - new_point.y * sin(angle_rad),
                  new_point.x * sin(angle_rad) + new_point.y * cos(angle_rad))
     # Reverse the shifting we have done
-    new_point = (new_point.x + center_point.x, new_point.y + center_point.y)
+    new_point = PolyPoint((new_point.x + center_point.x), (new_point.y + center_point.y))
     return new_point
 
 def _rotate_polygon(polygon, angle, center_point=PolyPoint(0, 0)):
@@ -42,17 +78,17 @@ def _rotate_polygon(polygon, angle, center_point=PolyPoint(0, 0)):
     """
     rotated_polygon = []
     for p in polygon:
-        rotated_p = rotate_point(p, angle, center_point)
+        rotated_p = _rotate_point(p, angle, center_point)
         rotated_polygon.append(rotated_p)
     return rotated_polygon
 
 class Ellipse(object):
-	def __init__(self, left, top, rx, ry):
+	def __init__(self, left, top, rx, ry, angle = 0):
 		self._left = left
 		self._top = top
 		self._rx = rx
 		self._ry = ry
-		self._angle = 0
+		self._angle = angle
 
 	@property
 	def rx(self):
@@ -78,6 +114,47 @@ class Ellipse(object):
 	@angle.setter
 	def angle(self, angle):
 		self._angle = angle
+
+	def trim(self, rect):
+		if not isinstance(rect, Rectangle):
+			raise ValueError("expected rectangle")
+
+		left = 0
+		if self._left < 0:
+			left = 0
+		elif self._left > rect.width:
+			left = rect.width
+		else:
+			left = self._left
+
+
+		top = 0
+		if self._top < 0:
+			top = 0
+		elif self._top > rect.height:
+			top = rect.height
+		else:
+			top = self._top
+
+		rx = 0
+		if self._rx < 0:
+			rx = 0
+		elif self._rx > rect.width:
+			rx = rect.width
+		else:
+			rx = self._rx
+
+		ry = 0
+		if self._ry < 0:
+			ry = 0
+		elif self._ry > rect.height:
+			ry = rect.height
+		else:
+			ry = self._ry
+
+		return Ellipse(left, top, rx, ry, self._angle):
+
+
 
 class Rectangle(object):
 	def __init__(self, top, left, width, height):
@@ -106,7 +183,7 @@ class Rectangle(object):
 	def height(self):
 		return self._height
 
-	def scaled(self, rect):
+	def trim(self, rect):
 		if not isinstance(rect, Rectangle):
 			raise ValueError("expected rectangle")
 
@@ -149,14 +226,14 @@ class Rectangle(object):
 		self._angle = angle
 
 	@property
-	def scaled_points(self):
+	def points(self):
 		if self._angle != 0:
-			return _rotate_polygon(self._points, self._angle, self.center)
-		return self._points
+			return PolyPoints(_rotate_polygon(self._points, self._angle, self.center))
+		return PolyPoints(self._points)
 
-	@property
-	def points(self):			
-		return self._points
+	#@property
+	#def points(self):			
+	#	return PolyPoints(self._points)
 
 
 
@@ -370,7 +447,7 @@ class API(object):
 		data = r.json()
 		return data
 
-	def export(self, labels, min_probability = 0.8):
+	def export(self, labels, min_probability = 0.8, only_annotated = False):
 		query = ""
 		for x in range(len(labels)):
 			query += labels[x]
@@ -378,6 +455,10 @@ class API(object):
 				query += "|"
 		url = self._base_url + "v" + str(self._api_version) + "/export"
 		params = {"query": query}
+
+		if only_annotated:
+			params["annotations_only"] = "true"
+
 		r = requests.get(url, params=params)
 		if(r.status_code == 500):
 			raise InternalImageMonkeyAPIError("Could not perform operation, please try again later")

@@ -97,6 +97,8 @@ class ImageMonkeyDataset(utils.Dataset):
         if image_info["source"] != "imagemonkey":
             return super(self.__class__, self).load_mask(image_id)
 
+        log.Debug("Loading mask for image with id %s" %(image_id))
+
         class_ids = []
         annotations = self.image_info[image_id]["annotations"]
         for i, annotation in enumerate(annotations):
@@ -108,18 +110,20 @@ class ImageMonkeyDataset(utils.Dataset):
             mask = np.zeros([image_info["height"], image_info["width"], len(annotations)],
                         dtype=np.uint8)
 
-            if type(annotation) is Ellipse:
-                skimage.draw.ellipse(annotation.left + annotation.rx, annotation.top + annotation.ry, rotation=math.radians(annotation.angle))
-            elif type(annotation) is Rectangle or type(annotation) is Polygon:
+            if type(annotation.data) is Ellipse:
+                trimmed_ellipse = annotation.data.trim(Rectangle(0, 0, width, height))
+
+
+                skimage.draw.ellipse(trimmed_ellipse.left + trimmed_ellipse.rx, trimmed_ellipse.top + trimmed_ellipse.ry, 
+                                        rotation=math.radians(trimmed_ellipse.angle))
+            elif type(annotation.data) is Rectangle or type(annotation.data) is Polygon:
                 polypoints = None
-                if type(annotation) is Rectangle:
-                    polypoints = annotation.data.scaled_points
-                else:
-                    polypoints = annotation.data.points
+                polypoints = annotation.data.points
+                trimmed_polypoints = polypoints.trim(Rectangle(0, 0, width, height)) 
 
                 xvals = []
                 yvals = []
-                for polypoint in polypoints:
+                for polypoint in trimmed_polypoints.points:
                     xvals.append(polypoint.x)
                     yvals.append(polypoint.y)
 
@@ -221,7 +225,7 @@ class MaskRcnnTrainer(Trainer):
 
         folder = self._images_dir + os.path.sep + dir_name
 
-        res = self._api.export(labels, min_probability)
+        res = self._api.export(labels, min_probability, only_annotated=True)
         for elem in res:
             path = folder + os.path.sep + elem.image.uuid + extension
             elem.image.path = path
