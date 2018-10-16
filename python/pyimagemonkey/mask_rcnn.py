@@ -107,7 +107,7 @@ class ImageMonkeyDataset(utils.Dataset):
                 continue
 
             #create n-dimensional mask with zeros
-            mask = np.zeros(image_info["width"], [image_info["height"], len(annotations)],
+            mask = np.zeros([image_info["width"], image_info["height"], len(annotations)],
                         dtype=np.uint8)
 
             if type(annotation.data) is Ellipse:
