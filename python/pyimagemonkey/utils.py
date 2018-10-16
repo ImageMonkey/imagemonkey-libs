@@ -91,10 +91,10 @@ class TensorflowTrainer(object):
 
 		if self._auto_download_tensorflow_train_script:
 			if not self._retrain_py_exists():
-				installed_tensorflow_version = self._get_installed_tensorflow_version() 
-				if installed_tensorflow_version is None:
-					raise ImageMonkeyGeneralError("trying to download tensorflow retrain script...couldn't find tenorflow. is it installed?")
-				self._download_release_specific_retrain_py(("v" + installed_tensorflow_version))
+				#installed_tensorflow_version = self._get_installed_tensorflow_version() 
+				#if installed_tensorflow_version is None:
+				#	raise ImageMonkeyGeneralError("trying to download tensorflow retrain script...couldn't find tensorflow. is it installed?")
+				self._download_release_specific_retrain_py(("v1.8.0"))
 
 			#if not self._object_detection_py_exists():
 			#	installed_tensorflow_version = self._get_installed_tensorflow_version() 
