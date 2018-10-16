@@ -97,7 +97,7 @@ if __name__ == "__main__":
 				parser.error('--learning-rate is only allowed when --type=object-detection')
 
 			try:
-				tensorflow_trainer = TensorflowTrainer(directory, clear_before_start=True, tf_object_detection_models_path="/tensorflow_models/")
+				tensorflow_trainer = TensorflowTrainer(directory, clear_before_start=True, tf_object_detection_models_path="/root/tensorflow_models/")
 				tensorflow_trainer.train(labels, min_probability = 0.8, train_type = train_type, learning_rate=args.learning_rate)
 			except Exception as e: 
 				print(e)
