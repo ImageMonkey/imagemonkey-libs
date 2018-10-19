@@ -45,6 +45,7 @@ if __name__ == "__main__":
 	train_parser.add_argument("--validation-steps", help="validation steps", required=False, default=None, type=int)
 	train_parser.add_argument("--learning-rate", help="learning rate", required=False, default=None)
 	train_parser.add_argument("--verbose", help="verbosity", required=False, default=False)
+	train_parser.add_argument("--epochs", help="num of epochs you want to train", required=False, default=None, type=int)
 
 	#add subparser for 'list-labels'
 	list_labels_parser = subparsers.add_parser('list-labels', help='list all labels that are available at ImageMonkey')
@@ -100,6 +101,8 @@ if __name__ == "__main__":
 				parser.error('--validation-steps is only allowed when --type=object-segmentation')
 			if (args.learning_rate is not None) and (train_type == Type.IMAGE_CLASSIFICATION):
 				parser.error('--learning-rate is only allowed when --type=object-detection')
+			if args.epochs is not None:
+				parser.error('--epochs is only allowed when --type=object-segmentation')
 
 			try:
 				tensorflow_trainer = TensorflowTrainer(directory, clear_before_start=True, tf_object_detection_models_path="/root/tensorflow_models/")
@@ -112,6 +115,7 @@ if __name__ == "__main__":
 			num_gpus = 1
 			steps_per_epoch = 100
 			validation_steps = 30
+			epochs = 30
 			if args.num_gpus is not None:
 				num_gpus = args.num_gpus
 			if args.min_img_size is not None:
@@ -122,12 +126,14 @@ if __name__ == "__main__":
 				steps_per_epoch = args.steps_per_epoch
 			if args.validation_steps is not None:
 				validation_steps = args.validation_steps
+			if args.epochs is not None:
+				epochs = args.epochs
 			if args.learning_rate is not None:
 				parser.error('--learning-rate is only allowed when --type=object-detection')
 
 			maskrcnn_trainer = MaskRcnnTrainer(directory, model="/home/imagemonkey/models/resnet/v0.2/resnet50_weights_tf_dim_ordering_tf_kernels_notop.h5")
 			maskrcnn_trainer.train(labels, min_probability = 0.8, num_gpus=num_gpus, min_image_dimension=min_img_size, max_image_dimension=max_img_size, 
-									steps_per_epoch=steps_per_epoch, validation_steps=validation_steps)
+									steps_per_epoch=steps_per_epoch, validation_steps=validation_steps, epochs=epochs)
 
 
 	if args.command == "list-labels":

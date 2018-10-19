@@ -6,6 +6,8 @@ import numpy as np
 import skimage
 import shutil
 import math
+from keras import backend as K
+from tensorflow.python.framework import graph_util
 
 from pyimagemonkey.api import *
 from pyimagemonkey.exceptions import *
@@ -235,9 +237,44 @@ class MaskRcnnTrainer(Trainer):
 
         return res
 
+    def save_model_to_pb(self):
+        log.info("Saving model...")
+        # Create model in inference mode
+        saved_model = modellib.MaskRCNN(mode="inference",
+                                    config=ImageMonkeyDataset(), model_dir=self.checkpoints_dir)
+        model_path = saved_model.find_last()[1]
+        log.debug("Loading weights from %s" %(model_path,))
+        saved_model.load_weights(model_filepath, by_name=True)
+
+        # All new operations will be in test mode from now on.
+        K.set_learning_phase(0)
+
+        filename = os.path.splitext(os.path.basename(model_path))[0] + ".pb"
+        sess = K.get_session() # get the tensorflow session
+        model_keras = saved_model.keras_model
+        output_names_all = [output.name.split(':')[0] for output in model_keras.outputs]
+
+        # Getthe graph to export
+        graph_to_export = sess.graph
+
+        # Freeze the variables in the graph and remove heads that were not selected
+        # this will also cause the pb file to contain all the constant weights
+        od_graph_def = graph_util.convert_variables_to_constants(sess,
+                                                                graph_to_export.as_graph_def(),
+                                                                output_names_all)
+
+        model_dirpath = os.path.dirname(model_path)
+        pb_filepath = os.path.join(model_dirpath, filename)
+        log.debug('Saving frozen graph %s...' %(os.path.basename(pb_filepath)))
+        frozen_graph_path = pb_filepath
+        with tf.gfile.GFile(frozen_graph_path, 'wb') as f:
+            f.write(od_graph_def.SerializeToString())
+        log.info("Froze graph: %s" %(os.path.basename(pb_filepath)))
+
     def train(self, labels, min_probability=0.8, num_gpus=1, 
                 min_image_dimension=800, max_image_dimension=1024, 
-                steps_per_epoch = 100, validation_steps = 70):
+                steps_per_epoch = 100, validation_steps = 70, 
+                epochs = 30):
         config = ImageMonkeyConfig(len(labels), num_gpus, min_image_dimension, max_image_dimension, 
                                     steps_per_epoch, validation_steps)
         config.display()
@@ -274,5 +311,7 @@ class MaskRcnnTrainer(Trainer):
         log.info("Training network heads")
         self._model.train(self._training_dataset, self._training_dataset,
                     learning_rate=config.LEARNING_RATE,
-                    epochs=30, layers='heads')
+                    epochs=epochs, layers='heads')
+
+        self.save_model_to_pb()
 
