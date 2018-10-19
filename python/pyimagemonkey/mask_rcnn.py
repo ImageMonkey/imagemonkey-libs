@@ -114,7 +114,7 @@ class ImageMonkeyDataset(utils.Dataset):
 
 
                 rr, cc = skimage.draw.ellipse(trimmed_ellipse.left + trimmed_ellipse.rx, trimmed_ellipse.top + trimmed_ellipse.ry, 
-                                                rotation=math.radians(trimmed_ellipse.angle))
+                                              trimmed_ellipse.rx, trimmed_ellipse.ry, rotation=math.radians(trimmed_ellipse.angle))
                 mask[rr, cc, i] = 1
 
 
