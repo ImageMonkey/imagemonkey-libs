@@ -101,14 +101,12 @@ class ImageMonkeyDataset(utils.Dataset):
 
         class_ids = []
         annotations = image_info["annotations"]
+        #create n-dimensional mask with zeros
+        mask = np.zeros([image_info["width"], image_info["height"], len(annotations)],
+                        dtype=np.uint8)
         for i, annotation in enumerate(annotations):
             if annotation.label not in self._all_labels:
-                log.debug("Skipping imagemonkey annotation with label %s as not in labels to train" %(annotation.label))
-                continue
-
-            #create n-dimensional mask with zeros
-            mask = np.zeros([image_info["width"], image_info["height"], len(annotations)],
-                        dtype=np.uint8)
+                raise ImageMonkeyGeneralError("Warning: imagemonkey annotation with label %s as not in labels to train" %(annotation.label))
 
             if type(annotation.data) is Ellipse:
                 trimmed_ellipse = annotation.data.trim(Rectangle(0, 0, image_info["width"], image_info["height"]))
