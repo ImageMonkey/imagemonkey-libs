@@ -28,7 +28,7 @@ def _create_dir_if_not_exists(directory):
 
 
 if __name__ == "__main__":
-	logging.basicConfig(level=logging.DEBUG) 
+	logging.basicConfig(level=logging.INFO) 
 
 	parser = argparse.ArgumentParser(prog='PROG')
 	subparsers = parser.add_subparsers(help='', dest='command')
@@ -44,11 +44,16 @@ if __name__ == "__main__":
 	train_parser.add_argument("--steps-per-epoch", help="training steps per epoch", required=False, default=None, type=int)
 	train_parser.add_argument("--validation-steps", help="validation steps", required=False, default=None, type=int)
 	train_parser.add_argument("--learning-rate", help="learning rate", required=False, default=None)
+	train_parser.add_argument("--verbose", help="verbosity", required=False, default=False)
 
 	#add subparser for 'list-labels'
 	list_labels_parser = subparsers.add_parser('list-labels', help='list all labels that are available at ImageMonkey')
 
 	args = parser.parse_args()
+
+	if args.verbose:
+		logging.basicConfig(level=logging.DEBUG) 
+
 
 	imagemonkey_api = API(api_version=1)
 
