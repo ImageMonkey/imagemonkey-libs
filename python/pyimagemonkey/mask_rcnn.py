@@ -5,6 +5,7 @@ import datetime
 import numpy as np
 import skimage
 import shutil
+import math
 
 from pyimagemonkey.api import *
 from pyimagemonkey.exceptions import *
