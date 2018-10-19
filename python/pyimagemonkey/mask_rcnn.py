@@ -241,7 +241,7 @@ class MaskRcnnTrainer(Trainer):
         log.info("Saving model...")
         # Create model in inference mode
         saved_model = modellib.MaskRCNN(mode="inference",
-                                    config=ImageMonkeyDataset(), model_dir=self.checkpoints_dir)
+                                    config=self._config, model_dir=self.checkpoints_dir)
         model_path = saved_model.find_last()[1]
         log.debug("Loading weights from %s" %(model_path,))
         saved_model.load_weights(model_filepath, by_name=True)
@@ -275,11 +275,11 @@ class MaskRcnnTrainer(Trainer):
                 min_image_dimension=800, max_image_dimension=1024, 
                 steps_per_epoch = 100, validation_steps = 70, 
                 epochs = 30):
-        config = ImageMonkeyConfig(len(labels), num_gpus, min_image_dimension, max_image_dimension, 
+        self._config = ImageMonkeyConfig(len(labels), num_gpus, min_image_dimension, max_image_dimension, 
                                     steps_per_epoch, validation_steps)
-        config.display()
+        self._config.display()
 
-        self._model = modellib.MaskRCNN(mode="training", config=config,
+        self._model = modellib.MaskRCNN(mode="training", config=self._config,
                                         model_dir=self.checkpoints_dir)
 
 
@@ -310,7 +310,7 @@ class MaskRcnnTrainer(Trainer):
         # no need to train all layers, just the heads should do it.
         log.info("Training network heads")
         self._model.train(self._training_dataset, self._training_dataset,
-                    learning_rate=config.LEARNING_RATE,
+                    learning_rate=self._config.LEARNING_RATE,
                     epochs=epochs, layers='heads')
 
         self.save_model_to_pb()
