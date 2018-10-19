@@ -6,6 +6,7 @@ import numpy as np
 import skimage
 import shutil
 import math
+import tensorflow as tf
 from keras import backend as K
 from tensorflow.python.framework import graph_util
 
@@ -242,9 +243,9 @@ class MaskRcnnTrainer(Trainer):
         # Create model in inference mode
         saved_model = modellib.MaskRCNN(mode="inference",
                                     config=self._config, model_dir=self.checkpoints_dir)
-        model_path = saved_model.find_last()[1]
+        model_path = saved_model.find_last()
         log.debug("Loading weights from %s" %(model_path,))
-        saved_model.load_weights(model_filepath, by_name=True)
+        saved_model.load_weights(model_path, by_name=True)
 
         # All new operations will be in test mode from now on.
         K.set_learning_phase(0)
@@ -269,7 +270,7 @@ class MaskRcnnTrainer(Trainer):
         frozen_graph_path = pb_filepath
         with tf.gfile.GFile(frozen_graph_path, 'wb') as f:
             f.write(od_graph_def.SerializeToString())
-        log.info("Froze graph: %s" %(os.path.basename(pb_filepath)))
+        log.info("Froze graph: %s" %(pb_filepath))
 
     def train(self, labels, min_probability=0.8, num_gpus=1, 
                 min_image_dimension=800, max_image_dimension=1024, 
