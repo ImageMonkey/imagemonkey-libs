@@ -45,7 +45,7 @@ class PolyPoints(object):
 			if p.y < 0:
 				y = 0
 			elif p.y > rect.height:
-				x = rect.height
+				y = rect.height
 			else:
 				y = p.y
 
