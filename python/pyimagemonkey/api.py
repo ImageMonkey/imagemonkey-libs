@@ -65,8 +65,8 @@ def _rotate_point(point, angle, center_point=PolyPoint(0, 0)):
     angle_rad = math.radians(angle % 360)
     # Shift the point so that center_point becomes the origin
     new_point = PolyPoint((point.x - center_point.x), (point.y - center_point.y))
-    new_point = (new_point.x * cos(angle_rad) - new_point.y * sin(angle_rad),
-                 new_point.x * sin(angle_rad) + new_point.y * cos(angle_rad))
+    new_point = (new_point.x * math.cos(angle_rad) - new_point.y * math.sin(angle_rad),
+                 new_point.x * math.sin(angle_rad) + new_point.y * math.cos(angle_rad))
     # Reverse the shifting we have done
     new_point = PolyPoint((new_point.x + center_point.x), (new_point.y + center_point.y))
     return new_point
