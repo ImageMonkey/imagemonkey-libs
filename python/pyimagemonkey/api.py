@@ -215,7 +215,7 @@ class Rectangle(object):
 
 	@property
 	def center(self):
-		return PolyPoint((left + (width/2)), (top + (height/2)))
+		return PolyPoint((self._left + (self._width/2)), (self._top + (self._height/2)))
 
 	@property
 	def angle(self):
