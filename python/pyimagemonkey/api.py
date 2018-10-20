@@ -65,11 +65,10 @@ def _rotate_point(point, angle, center_point=PolyPoint(0, 0)):
     angle_rad = math.radians(angle % 360)
     # Shift the point so that center_point becomes the origin
     new_point = PolyPoint((point.x - center_point.x), (point.y - center_point.y))
-    new_point = (new_point.x * math.cos(angle_rad) - new_point.y * math.sin(angle_rad),
-                 new_point.x * math.sin(angle_rad) + new_point.y * math.cos(angle_rad))
+    shifted_point = PolyPoint((new_point.x * math.cos(angle_rad) - new_point.y * math.sin(angle_rad)),
+                 			 (new_point.x * math.sin(angle_rad) + new_point.y * math.cos(angle_rad)))
     # Reverse the shifting we have done
-    new_point = PolyPoint((new_point.x + center_point.x), (new_point.y + center_point.y))
-    return new_point
+    return PolyPoint((shifted_point.x + center_point.x), (shifted_point.y + center_point.y))
 
 def _rotate_polygon(polygon, angle, center_point=PolyPoint(0, 0)):
     """Rotates the given polygon which consists of corners represented as (x,y)
