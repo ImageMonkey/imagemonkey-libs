@@ -312,7 +312,8 @@ class MaskRcnnTrainer(Trainer):
         log.info("Training network heads")
         self._model.train(self._training_dataset, self._training_dataset,
                     learning_rate=self._config.LEARNING_RATE,
-                    epochs=epochs, layers='heads')
+                    epochs=epochs, layers='heads',
+                    save_best_only=True)
 
         self.save_model_to_pb()
 
