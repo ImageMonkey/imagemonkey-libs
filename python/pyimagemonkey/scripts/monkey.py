@@ -11,6 +11,7 @@ from pyimagemonkey import API
 from pyimagemonkey import Type
 from pyimagemonkey import TensorflowTrainer
 from pyimagemonkey import MaskRcnnTrainer
+from pyimagemonkey import ImageClassificationTrainingStatistics
 
 log = logging.getLogger(__name__)
 log.addHandler(logging.NullHandler())
@@ -46,6 +47,7 @@ if __name__ == "__main__":
 	train_parser.add_argument("--learning-rate", help="learning rate", required=False, default=None)
 	train_parser.add_argument("--verbose", help="verbosity", required=False, default=False)
 	train_parser.add_argument("--epochs", help="num of epochs you want to train", required=False, default=None, type=int)
+	train_parser.add_argument("--save-best-only", help="save only best checkpoint", required=False, default=None, type=bool)
 
 	#add subparser for 'list-labels'
 	list_labels_parser = subparsers.add_parser('list-labels', help='list all labels that are available at ImageMonkey')
@@ -103,9 +105,19 @@ if __name__ == "__main__":
 				parser.error('--learning-rate is only allowed when --type=object-detection')
 			if args.epochs is not None:
 				parser.error('--epochs is only allowed when --type=object-segmentation')
+			if args.save_best_only is not None:
+				parser.error('--save-best-only is only allowed when --type=object-segmentation')
 
 			try:
-				tensorflow_trainer = TensorflowTrainer(directory, clear_before_start=True, tf_object_detection_models_path="/root/tensorflow_models/")
+				statistics = None
+				if train_type == Type.IMAGE_CLASSIFICATION:
+					statistics = ImageClassificationTrainingStatistics()
+
+
+
+				tensorflow_trainer = TensorflowTrainer(directory, clear_before_start=True, 
+														tf_object_detection_models_path="/root/tensorflow_models/",
+														statistics=statistics)
 				tensorflow_trainer.train(labels, min_probability = 0.8, train_type = train_type, learning_rate=args.learning_rate)
 			except Exception as e: 
 				print(e)
@@ -116,6 +128,7 @@ if __name__ == "__main__":
 			steps_per_epoch = 100
 			validation_steps = 30
 			epochs = 30
+			save_best_only = True
 			if args.num_gpus is not None:
 				num_gpus = args.num_gpus
 			if args.min_img_size is not None:
@@ -130,10 +143,12 @@ if __name__ == "__main__":
 				epochs = args.epochs
 			if args.learning_rate is not None:
 				parser.error('--learning-rate is only allowed when --type=object-detection')
+			if args.save_best_only is not None:
+				save_best_only = args.save_best_only
 
 			maskrcnn_trainer = MaskRcnnTrainer(directory, model="/home/imagemonkey/models/resnet/v0.2/resnet50_weights_tf_dim_ordering_tf_kernels_notop.h5")
 			maskrcnn_trainer.train(labels, min_probability = 0.8, num_gpus=num_gpus, min_image_dimension=min_img_size, max_image_dimension=max_img_size, 
-									steps_per_epoch=steps_per_epoch, validation_steps=validation_steps, epochs=epochs)
+									steps_per_epoch=steps_per_epoch, validation_steps=validation_steps, epochs=epochs, save_best_only=save_best_only)
 
 
 	if args.command == "list-labels":

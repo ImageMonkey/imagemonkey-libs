@@ -2,6 +2,7 @@ import os
 from pyimagemonkey.exceptions import *
 from pyimagemonkey.api import *
 from pyimagemonkey.type import *
+from pyimagemonkey.statistics import *
 import logging
 import shutil
 import subprocess
@@ -41,7 +42,8 @@ log = logging.getLogger(__name__)
 log.addHandler(logging.NullHandler())
 
 class TensorflowTrainer(object):
-	def __init__(self, training_dir, clear_before_start=False, auto_download_tensorflow_train_script = True, tf_object_detection_models_path = None):
+	def __init__(self, training_dir, clear_before_start=False, auto_download_tensorflow_train_script = True, 
+					tf_object_detection_models_path = None, statistics = None):
 		self._training_dir = training_dir
 		self._auto_download_tensorflow_train_script = auto_download_tensorflow_train_script
 		self._images_dir = training_dir + os.path.sep + "images"
@@ -49,7 +51,8 @@ class TensorflowTrainer(object):
 		self._models_dir = training_dir + os.path.sep + "models"
 		self._checkpoints_dir = training_dir + os.path.sep + "checkpoints"
 		self._model_output_tmp_dir = self._model_output_dir + os.path.sep + "tmp"
-		self._image_classification_output_tmp_dir = self._model_output_tmp_dir + os.path.sep + "image_classification"
+		self._image_classification_output_tmp_dir = self._model_output_tmp_dir + os.path.sep + "image_classification" + os.path.sep + "categories"
+		self._statistics_dir = self._model_output_dir + os.path.sep + "statistics"
 		self._object_detection_output_tmp_dir = self._model_output_tmp_dir + os.path.sep + "object_detection"
 		self._retrain_py_dir = self._models_dir
 		#self._object_detection_py_dir = self._models_dir + os.path.sep + "pyobject_detection"
@@ -58,6 +61,7 @@ class TensorflowTrainer(object):
 		self._object_detection_pipeline_config_path = self._object_detection_output_tmp_dir + os.path.sep + "tf_pipeline.config"
 		self._retrain_py = self._retrain_py_dir + os.path.sep + "retrain.py"
 		self._tf_object_detection_models_path = tf_object_detection_models_path
+		self._statistics = statistics
 		self._api = API(api_version=1)
 
 		if clear_before_start:
@@ -76,6 +80,9 @@ class TensorflowTrainer(object):
 
 		if not os.path.exists(self._image_classification_output_tmp_dir):
 			os.makedirs(self._image_classification_output_tmp_dir)
+
+		if not os.path.exists(self._statistics_dir):
+			os.makedirs(self._statistics_dir)
 
 		if not os.path.exists(self._object_detection_output_tmp_dir):
 			os.makedirs(self._object_detection_output_tmp_dir)
@@ -234,7 +241,7 @@ class TensorflowTrainer(object):
 			print(line.rstrip())
 			log.info(line.rstrip())
 			if process.poll() is not None:
-				log.Info("Success! The model is available at: " %((self._model_output_dir + os.path.sep + "graph.pb")))
+				log.info("Success! The model is available at: " %((self._model_output_dir + os.path.sep + "graph.pb")))
 				return
 
 
@@ -279,9 +286,16 @@ class TensorflowTrainer(object):
 
 	def train(self, labels, min_probability = 0.8, train_type=Type.IMAGE_CLASSIFICATION, learning_rate = None):
 		if train_type == Type.IMAGE_CLASSIFICATION:
-			self._export_data_and_download_images(labels, min_probability)
+			d = self._export_data_and_download_images(labels, min_probability)
 			self._image_classification_sanity_check(labels)
+
+			if self._statistics is not None:
+				self._statistics.output_path = self._statistics_dir + os.path.sep + "statistics.json"
+				self._statistics.generate(d)
+				self._statistics.save()
+
 			self._train_image_classification()
+
 		elif train_type == Type.OBJECT_DETECTION:
 			data = self._export_data_and_download_images(labels, min_probability)
 

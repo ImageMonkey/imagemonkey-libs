@@ -15,7 +15,9 @@ RUN git clone https://github.com/tensorflow/models.git /root/tensorflow_models \
 	&& cd /root/tensorflow_models && git checkout 8ffcc2fa3287d031a228860ce574f34c0718cc89 \
 	&& cd ~
 
-RUN git clone https://github.com/matterport/Mask_RCNN /home/imagemonkey/mask_rcnn
+#RUN git clone https://github.com/matterport/Mask_RCNN /home/imagemonkey/mask_rcnn
+RUN git clone https://github.com/bbernhard/Mask_RCNN /home/imagemonkey/mask_rcnn
+RUN cd /home/imagemonkey/mask_rcnn/ && git checkout save_only_best_checkpoint
 
 RUN pip3 install -r /home/imagemonkey/mask_rcnn/requirements.txt
 RUN cd /home/imagemonkey/mask_rcnn/ && python setup.py install

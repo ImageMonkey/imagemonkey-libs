@@ -275,7 +275,7 @@ class MaskRcnnTrainer(Trainer):
     def train(self, labels, min_probability=0.8, num_gpus=1, 
                 min_image_dimension=800, max_image_dimension=1024, 
                 steps_per_epoch = 100, validation_steps = 70, 
-                epochs = 30):
+                epochs = 30, save_best_only = True):
         self._config = ImageMonkeyConfig(len(labels), num_gpus, min_image_dimension, max_image_dimension, 
                                     steps_per_epoch, validation_steps)
         self._config.display()
@@ -313,7 +313,7 @@ class MaskRcnnTrainer(Trainer):
         self._model.train(self._training_dataset, self._training_dataset,
                     learning_rate=self._config.LEARNING_RATE,
                     epochs=epochs, layers='heads',
-                    save_best_only=True)
+                    save_best_only=save_best_only)
 
         self.save_model_to_pb()
 
