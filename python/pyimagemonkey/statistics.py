@@ -22,9 +22,9 @@ class TrainingStatistics(object):
 				f.write(self._output)
 
 
-class ImageClassificationTrainingStatistics(TrainingStatistics):
+class DefaultTrainingStatistics(TrainingStatistics):
 	def __init__(self):
-		super(ImageClassificationTrainingStatistics, self).__init__()
+		super(DefaultTrainingStatistics, self).__init__()
 
 	def generate(self, data):
 		output = {}

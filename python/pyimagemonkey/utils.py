@@ -42,8 +42,8 @@ log = logging.getLogger(__name__)
 log.addHandler(logging.NullHandler())
 
 class TensorflowTrainer(object):
-	def __init__(self, training_dir, clear_before_start=False, auto_download_tensorflow_train_script = True, 
-					tf_object_detection_models_path = None, statistics = None):
+	def __init__(self, training_dir, clear_before_start=False, auto_download_tensorflow_train_script=True, 
+					tf_object_detection_models_path=None, statistics=None, filter_dataset=None):
 		self._training_dir = training_dir
 		self._auto_download_tensorflow_train_script = auto_download_tensorflow_train_script
 		self._images_dir = training_dir + os.path.sep + "images"
@@ -62,6 +62,7 @@ class TensorflowTrainer(object):
 		self._retrain_py = self._retrain_py_dir + os.path.sep + "retrain.py"
 		self._tf_object_detection_models_path = tf_object_detection_models_path
 		self._statistics = statistics
+		self._filter = filter_dataset
 		self._api = API(api_version=1)
 
 		if clear_before_start:
@@ -241,7 +242,7 @@ class TensorflowTrainer(object):
 			print(line.rstrip())
 			log.info(line.rstrip())
 			if process.poll() is not None:
-				log.info("Success! The model is available at: " %((self._model_output_dir + os.path.sep + "graph.pb")))
+				log.info("Success! The model is available at: %s" %((self._model_output_dir + os.path.sep + "graph.pb")))
 				return
 
 
@@ -270,12 +271,15 @@ class TensorflowTrainer(object):
 			+ " --bottleneck_dir " + self._image_classification_output_tmp_dir)
 		self._run_command(cmd)
 
-	def _export_data_and_download_images(self, labels, min_probability):
+	def _export_data_and_download_images(self, labels, min_probability, only_annotated):
 		for label in labels:
 			if not self._category_dir_exists(label):
 				self._create_category_dir(label)
 
-		res = self._api.export(labels, min_probability, only_annotated=True)
+		res = self._api.export(labels, min_probability, only_annotated=only_annotated)
+		if self._filter is not None:
+			res = self._filter.filter(res)
+
 		for elem in res:
 			for validation in elem.validations:
 				folder = self._images_dir + os.path.sep + validation.label
@@ -286,7 +290,7 @@ class TensorflowTrainer(object):
 
 	def train(self, labels, min_probability = 0.8, train_type=Type.IMAGE_CLASSIFICATION, learning_rate = None):
 		if train_type == Type.IMAGE_CLASSIFICATION:
-			d = self._export_data_and_download_images(labels, min_probability)
+			d = self._export_data_and_download_images(labels, min_probability, only_annotated=False)
 			self._image_classification_sanity_check(labels)
 
 			if self._statistics is not None:
@@ -297,7 +301,7 @@ class TensorflowTrainer(object):
 			self._train_image_classification()
 
 		elif train_type == Type.OBJECT_DETECTION:
-			data = self._export_data_and_download_images(labels, min_probability)
+			data = self._export_data_and_download_images(labels, min_probability, only_annotated=True)
 
 			self._train_object_detection(labels, data, learning_rate)
 

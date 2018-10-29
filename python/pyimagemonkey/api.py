@@ -365,9 +365,17 @@ class DataEntry(object):
 	def validations(self):
 		return self._validations
 
+	@validations.setter
+	def validations(self, val):
+		self._validations = val
+
 	@property
 	def annotations(self):
 		return self._annotations
+
+	@annotations.setter
+	def annotations(self, val):
+		self._annotations = val
 
 	@property
 	def image(self):

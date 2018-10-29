@@ -6,3 +6,6 @@ class ImageMonkeyAPIError(ImageMonkeyGeneralError):
 
 class InternalImageMonkeyAPIError(ImageMonkeyAPIError):
 	"""Exception for API errors."""
+
+class ImageMonkeyDatasetFilterError(Exception):
+	"""Exception for Filter errors."""

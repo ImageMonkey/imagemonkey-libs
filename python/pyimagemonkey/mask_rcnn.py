@@ -164,6 +164,7 @@ class Trainer(object):
         self._images_dir = training_dir + os.path.sep + "images"
         self._models_dir = training_dir + os.path.sep + "models"
         self._checkpoints_dir = training_dir + os.path.sep + "checkpoints"
+        self._statistics_dir = self._training_dir + os.path.sep + "statistics"
         self._api = API(api_version=1)
 
         if clear_before_start:
@@ -178,6 +179,9 @@ class Trainer(object):
 
         if not os.path.exists(self._checkpoints_dir):
             os.makedirs(self._checkpoints_dir)
+
+        if not os.path.exists(self._statistics_dir):
+            os.makedirs(self._statistics_dir)
 
     @property
     def checkpoints_dir(self):
@@ -210,10 +214,12 @@ class Trainer(object):
 
 
 class MaskRcnnTrainer(Trainer):
-    def __init__(self, training_dir, clear_before_start=True, model="imagenet"):
+    def __init__(self, training_dir, clear_before_start=True, model="imagenet", filter_dataset=None, statistics=None):
         super(MaskRcnnTrainer, self).__init__(training_dir, clear_before_start)
         self._training_dataset = ImageMonkeyDataset() #training dataset
         self._validation_dataset = ImageMonkeyDataset() #validation dataset
+        self._filter = filter_dataset
+        self._statistics = statistics
 
         self._base_model = model
         
@@ -230,6 +236,10 @@ class MaskRcnnTrainer(Trainer):
         folder = self._images_dir + os.path.sep + dir_name
 
         res = self._api.export(labels, min_probability, only_annotated=True)
+        if self._filter is not None:
+            res = self._filter.filter(res)
+
+
         for elem in res:
             path = folder + os.path.sep + elem.image.uuid + extension
             elem.image.path = path
@@ -294,6 +304,10 @@ class MaskRcnnTrainer(Trainer):
             raise ImageMonkeyGeneralError("Model path is missing - please provide a valid model path!")
 
         data = self._export_data_and_download_images(labels, min_probability)
+        if self._statistics is not None:
+            self._statistics.output_path = self._statistics_dir + os.path.sep + "statistics.json"
+            self._statistics.generate(data)
+            self._statistics.save()
 
         log.debug("Loading weights %s" %(model_path,))
         self._model.load_weights(model_path, by_name=True)

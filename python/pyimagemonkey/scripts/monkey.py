@@ -5,13 +5,15 @@ import logging
 import sys
 import os
 import io
+import traceback
 sys.path.insert(1, os.path.join(sys.path[0], ('..' + os.path.sep + "..")))
 
 from pyimagemonkey import API
 from pyimagemonkey import Type
 from pyimagemonkey import TensorflowTrainer
 from pyimagemonkey import MaskRcnnTrainer
-from pyimagemonkey import ImageClassificationTrainingStatistics
+from pyimagemonkey import DefaultTrainingStatistics
+from pyimagemonkey import LimitDatasetFilter
 
 log = logging.getLogger(__name__)
 log.addHandler(logging.NullHandler())
@@ -48,6 +50,8 @@ if __name__ == "__main__":
 	train_parser.add_argument("--verbose", help="verbosity", required=False, default=False)
 	train_parser.add_argument("--epochs", help="num of epochs you want to train", required=False, default=None, type=int)
 	train_parser.add_argument("--save-best-only", help="save only best checkpoint", required=False, default=None, type=bool)
+	train_parser.add_argument("--max-deviation", help="max deviation", required=False, default=None, type=float)
+	train_parser.add_argument("--images-per-label", help="number of images per class", required=False, default=None, type=int)
 
 	#add subparser for 'list-labels'
 	list_labels_parser = subparsers.add_parser('list-labels', help='list all labels that are available at ImageMonkey')
@@ -89,6 +93,19 @@ if __name__ == "__main__":
 			print("Please provide a labels list first!")
 			sys.exit(1)
 
+		num_images_per_label = None
+		if args.images_per_label is not None:
+			num_images_per_label = args.images_per_label
+
+		max_deviation = 0.1
+		if args.max_deviation is not None:
+			max_deviation = args.max_deviation
+
+		filter_dataset = None
+		if num_images_per_label is not None:
+			filter_dataset = LimitDatasetFilter(num_images_per_label=num_images_per_label, max_deviation=max_deviation)
+
+		statistics = DefaultTrainingStatistics()
 
 		if train_type == Type.OBJECT_DETECTION or train_type == Type.IMAGE_CLASSIFICATION:
 			if args.num_gpus is not None:
@@ -109,18 +126,12 @@ if __name__ == "__main__":
 				parser.error('--save-best-only is only allowed when --type=object-segmentation')
 
 			try:
-				statistics = None
-				if train_type == Type.IMAGE_CLASSIFICATION:
-					statistics = ImageClassificationTrainingStatistics()
-
-
-
 				tensorflow_trainer = TensorflowTrainer(directory, clear_before_start=True, 
 														tf_object_detection_models_path="/root/tensorflow_models/",
-														statistics=statistics)
+														statistics=statistics, filter_dataset=filter_dataset)
 				tensorflow_trainer.train(labels, min_probability = 0.8, train_type = train_type, learning_rate=args.learning_rate)
 			except Exception as e: 
-				print(e)
+				traceback.print_exc()
 		else:
 			min_img_size = 800
 			max_img_size = 1024
@@ -146,7 +157,8 @@ if __name__ == "__main__":
 			if args.save_best_only is not None:
 				save_best_only = args.save_best_only
 
-			maskrcnn_trainer = MaskRcnnTrainer(directory, model="/home/imagemonkey/models/resnet/v0.2/resnet50_weights_tf_dim_ordering_tf_kernels_notop.h5")
+			maskrcnn_trainer = MaskRcnnTrainer(directory, filter_dataset=filter_dataset, statistics=statistics,
+												model="/home/imagemonkey/models/resnet/v0.2/resnet50_weights_tf_dim_ordering_tf_kernels_notop.h5")
 			maskrcnn_trainer.train(labels, min_probability = 0.8, num_gpus=num_gpus, min_image_dimension=min_img_size, max_image_dimension=max_img_size, 
 									steps_per_epoch=steps_per_epoch, validation_steps=validation_steps, epochs=epochs, save_best_only=save_best_only)
 
