@@ -61,7 +61,9 @@ So our json file could look like this:
 
 *Tip: It's a good idea to put images in the same folder, that share the most labels together.*
 
-* Open a command line, `cd` to the directory your Python script resides and start it with `python donate_and_label.py`
+* In order to run the script, `cd` to the directory your Python script resides and start it with `python donate_and_label.py`
 * The script now gives you a quick summary what it will be doing. **Please verify that you have specified the correct folder and label names.**
+
+
 
 ![alt text](https://raw.githubusercontent.com/bbernhard/imagemonkey-libs/master/python/doc/snippets/img/confirm.png)
