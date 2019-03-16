@@ -20,31 +20,64 @@ class LimitDatasetFilter(DatasetFilter):
 	def filter(self, data):
 		_data = copy.deepcopy(data)
 
-		num = {}
+		num_validations = {}
+		num_images = {}
+
 
 		for elem in _data:
 			validations = [] 
 			for validation in elem.validations:
 				num_per_label = 0
 				try:
-					num_per_label = num[validation.label]
+					num_per_label = num_validations[validation.label]
 				except KeyError:
 					num_per_label = 0
 
 				if num_per_label < self._max_elems_per_label:
 					try:
-						num[validation.label] += 1
+						num_validations[validation.label] += 1
 					except KeyError:
-						num[validation.label] = 1
+						num_validations[validation.label] = 1
 
 					validations.append(validation)
 
 			elem.validations = validations
 
-		for n in num:
-			if ((num[n] > (self._max_elems_per_label + self._max_deviation_elems)) 
-				or (num[n] < (self._max_elems_per_label - self._max_deviation_elems))):
+
+			annotations = []
+			temp_image_labels = {}
+			for annotation in elem.annotations:
+				num_per_label = 0
+				try:
+					num_per_label = num_images[annotation.label]
+				except KeyError:
+					num_per_label = 0
+				if num_per_label < self._max_elems_per_label:
+					annotations.append(annotation)
+
+					if annotation.label not in temp_image_labels:
+						temp_image_labels[annotation.label] = None
+
+			for l in temp_image_labels:
+				try:
+					num_images[l] += 1
+				except KeyError:
+					num_images[l] = 1
+
+					
+
+			elem.annotations = annotations
+
+		for n in num_validations:
+			if ((num_validations[n] > (self._max_elems_per_label + self._max_deviation_elems)) 
+				or (num_validations[n] < (self._max_elems_per_label - self._max_deviation_elems))):
 				raise ImageMonkeyDatasetFilterError("number of images for label '%s' doesn't match expected value (expected: %d, got: %d, derivation: %d percent)" 
-														%(n, self._max_elems_per_label, num[n], int(self._max_deviation * 100)))
+														%(n, self._max_elems_per_label, num_validations[n], int(self._max_deviation * 100)))
+
+		for n in num_images:
+			if ((num_images[n] > (self._max_elems_per_label + self._max_deviation_elems)) 
+				or (num_images[n] < (self._max_elems_per_label - self._max_deviation_elems))):
+				raise ImageMonkeyDatasetFilterError("number of images for label '%s' doesn't match expected value (expected: %d, got: %d, derivation: %d percent)" 
+														%(n, self._max_elems_per_label, num_images[n], int(self._max_deviation * 100)))
 
 		return _data

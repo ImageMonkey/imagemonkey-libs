@@ -17,8 +17,14 @@ if not hasattr(secrets, 'X_API_TOKEN') or secrets.X_API_TOKEN == "":
 	sys.exit(1)
 
 
-def _confirm(files, labels):
+def _confirm(files, image_collection, labels):
 	print("Are you sure you want to donate these %d images?\n" %(len(files)))
+
+	if image_collection is not None:
+		print("##############################################################")
+		print("###################### Image Collection ######################")
+		print("##############################################################\n\n")
+		print(image_collection)
 
 	print("##############################################################")
 	print("########################### Labels ###########################")
@@ -43,13 +49,17 @@ def _parse_and_validate_labels_file(path):
 	with open(path) as f:
 		data = json.load(f)
 
-	if len(data) == 0:
+	if "labels" not in data:
+		print("labels are missing - please specify at least one label!")
+		sys.exit(1)
+
+	labels = data["labels"]
+	if len(labels) == 0:
 		print("labels are missing - please specify at least one label!")
 		sys.exit(1)
 
 	parsed_data = []
-
-	for idx, item in enumerate(data):
+	for idx, item in enumerate(labels):
 		if "label" not in item:
 			print("Couldn't parse labels file - expected a property 'label' in \n\n\t%s." %(item,))
 			sys.exit(1)
@@ -68,7 +78,11 @@ def _parse_and_validate_labels_file(path):
 
 		parsed_data.append(item)
 
-	return parsed_data
+	image_collection = None
+	if "image_collection" in data:
+		image_collection = data["image_collection"]
+
+	return image_collection, parsed_data
 
 
 def _add_labels(uuid, labels):
@@ -89,15 +103,17 @@ def _add_labels(uuid, labels):
 		print("Timeout for %s: " %(uuid,))
 
 
-def _push(full_path, labels):
+def _push(full_path, image_collection, labels):
 	url = BASEURL + '/v1/donate?add_sublabels=false'
 
 	img_bytes = _load_img_and_resize(full_path)
 
 	multipart_formdata = {
 		'image': ('file.jpg', img_bytes, 'image/jpg'),
-
 	}
+
+	if image_collection is not None:
+		multipart_formdata["image_collection"] = image_collection
 
 	print("Pushing: %s" %(full_path,))
 	try:
@@ -153,14 +169,14 @@ if __name__ == "__main__":
 		print("Labels file %s does not exist!" %(labels_file_path,))
 		sys.exit(1)
 
-	parsed_data = _parse_and_validate_labels_file(labels_file_path)
+	image_collection, labels = _parse_and_validate_labels_file(labels_file_path)
 
 	files = os.listdir(path)
 
-	if not _confirm(files, parsed_data):
+	if not _confirm(files, labels):
 		print("aborted due to user input")
 		sys.exit(1)
 
 	for f in files:
 		full_path = path + os.path.sep + f
-		_push(full_path, parsed_data)
+		_push(full_path, image_collection, labels)

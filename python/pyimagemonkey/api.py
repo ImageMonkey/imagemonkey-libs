@@ -83,12 +83,21 @@ def _rotate_polygon(polygon, angle, center_point=PolyPoint(0, 0)):
     return rotated_polygon
 
 class Ellipse(object):
-	def __init__(self, left, top, rx, ry, angle = 0):
+	def __init__(self, left, top, rx, ry, angle=0, cx=None, cy=None):
 		self._left = left
 		self._top = top
 		self._rx = rx
 		self._ry = ry
 		self._angle = angle
+
+		if cx is None:
+			self._cx = self._left + self._rx
+		else:
+			self._cx = cx
+		if cy is None:
+			self._cy = self._top + self._ry
+		else:
+			self._cy = cy
 
 	@property
 	def rx(self):
@@ -106,6 +115,22 @@ class Ellipse(object):
 	def top(self):
 		return self._top
 
+	@property
+	def cx(self):
+		return self._cx
+
+	@cx.setter
+	def cx(self, val):
+		self._cx = val
+
+	@property
+	def cy(self):
+		return self._cy
+
+	@cy.setter
+	def cy(self, val):
+		self._cy = val
+
 
 	@property
 	def angle(self):
@@ -118,6 +143,22 @@ class Ellipse(object):
 	def trim(self, rect):
 		if not isinstance(rect, Rectangle):
 			raise ValueError("expected rectangle")
+
+		cx = 0
+		if (self._left + self._rx) < 0:
+			cx = 0
+		elif (self._left + self._rx) > rect.width:
+			cx = rect.width
+		else:
+			cx = self._left + self._rx
+
+		cy = 0
+		if (self._top + self._ry) < 0:
+			cy = 0
+		elif (self._top + self._ry) > rect.height:
+			cy = rect.height
+		else:
+			cy = self._top + self._ry
 
 		left = 0
 		if self._left < 0:
@@ -139,20 +180,20 @@ class Ellipse(object):
 		rx = 0
 		if self._rx < 0:
 			rx = 0
-		elif self._rx > rect.width:
-			rx = rect.width
+		elif (self._rx + cx) > rect.width:
+			rx = rect.width - cx
 		else:
 			rx = self._rx
 
 		ry = 0
 		if self._ry < 0:
 			ry = 0
-		elif self._ry > rect.height:
-			ry = rect.height
+		elif (self._ry + cy) > rect.height:
+			ry = rect.height - cy
 		else:
 			ry = self._ry
 
-		return Ellipse(left, top, rx, ry, self._angle)
+		return Ellipse(left, top, rx, ry, self._angle, cx=cx, cy=cy)
 
 
 
@@ -438,6 +479,29 @@ class API(object):
 		self._api_version = api_version
 		self._base_url = "https://api.imagemonkey.io/"
 
+	def list_validations(self, min_probability=0.8, min_count=0):
+		url = self._base_url + "v" + str(self._api_version) + "/statistics/validations/count"
+		params = {"min_probability": min_probability, "min_count": min_count}
+		r = requests.get(url, params=params)
+		if(r.status_code == 500):
+			raise InternalImageMonkeyAPIError("Could not perform operation, please try again later")
+		elif(r.status_code != 200):
+			raise ImageMonkeyAPIError(r["error"])
+
+		data = r.json()
+		return data
+
+	def list_annotations(self, min_probability=0.8, min_count=0):
+		url = self._base_url + "v" + str(self._api_version) + "/statistics/annotations/count"
+		params = {"min_probability": min_probability, "min_count": min_count}
+		r = requests.get(url, params=params)
+		if(r.status_code == 500):
+			raise InternalImageMonkeyAPIError("Could not perform operation, please try again later")
+		elif(r.status_code != 200):
+			raise ImageMonkeyAPIError(r["error"])
+
+		data = r.json()
+		return data
 
 
 	def labels(self, show_accessors=False):
@@ -455,7 +519,7 @@ class API(object):
 		data = r.json()
 		return data
 
-	def export(self, labels, min_probability = 0.8, only_annotated = False):
+	def export(self, labels, min_probability=0.8, only_annotated=False):
 		query = ""
 		for x in range(len(labels)):
 			query += labels[x]

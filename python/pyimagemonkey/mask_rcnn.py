@@ -115,8 +115,7 @@ class ImageMonkeyDataset(utils.Dataset):
             if type(annotation.data) is Ellipse:
                 trimmed_ellipse = annotation.data.trim(Rectangle(0, 0, image_info["width"], image_info["height"]))
 
-
-                rr, cc = skimage.draw.ellipse(trimmed_ellipse.left + trimmed_ellipse.rx, trimmed_ellipse.top + trimmed_ellipse.ry, 
+                rr, cc = skimage.draw.ellipse(trimmed_ellipse.cx, trimmed_ellipse.cy, 
                                               trimmed_ellipse.rx, trimmed_ellipse.ry, rotation=math.radians(trimmed_ellipse.angle))
                 mask[rr, cc, i] = 1
 
@@ -239,7 +238,6 @@ class MaskRcnnTrainer(Trainer):
         if self._filter is not None:
             res = self._filter.filter(res)
 
-
         for elem in res:
             path = folder + os.path.sep + elem.image.uuid + extension
             elem.image.path = path
@@ -304,10 +302,6 @@ class MaskRcnnTrainer(Trainer):
             raise ImageMonkeyGeneralError("Model path is missing - please provide a valid model path!")
 
         data = self._export_data_and_download_images(labels, min_probability)
-        if self._statistics is not None:
-            self._statistics.output_path = self._statistics_dir + os.path.sep + "statistics.json"
-            self._statistics.generate(data)
-            self._statistics.save()
 
         log.debug("Loading weights %s" %(model_path,))
         self._model.load_weights(model_path, by_name=True)
@@ -318,8 +312,13 @@ class MaskRcnnTrainer(Trainer):
         self._validation_dataset.load(data, labels, "validation")
         self._validation_dataset.prepare()
 
+        if self._statistics is not None:
+            self._statistics.output_path = self._statistics_dir + os.path.sep + "statistics.json"
+            self._statistics.class_names = self._training_dataset.class_names
+            self._statistics.generate(data)
+            self._statistics.save()
 
-        # *** This training schedule is an example. Update to your needs ***
+
         # Since we're using a very small dataset, and starting from
         # COCO trained weights, we don't need to train too long. Also,
         # no need to train all layers, just the heads should do it.
@@ -331,3 +330,30 @@ class MaskRcnnTrainer(Trainer):
 
         self.save_model_to_pb()
 
+
+class MaskRcnnTester(object):
+    def __init__(self, model):
+        self._model = model
+
+    def test(labels, img_path, num_gpus=1, min_image_dimension=800, max_image_dimension=1024, 
+             steps_per_epoch = 100, validation_steps = 70, epochs = 30):
+        self._config = ImageMonkeyConfig(len(labels), num_gpus, min_image_dimension, max_image_dimension, 
+                                    steps_per_epoch, validation_steps)
+        self._config.display()
+
+        # Create model object in inference mode.
+        self._model = modellib.MaskRCNN(mode="inference", model_dir=self._model, config=self._config)
+
+        # Load weights trained on MS-COCO
+        self._model.load_weights(self._model, by_name=True)
+
+
+        image = skimage.io.imread(img_path)
+
+        # Run detection
+        results = model.detect([image], verbose=1)
+
+        # Visualize results
+        r = results[0]
+        visualize.display_instances(image, r['rois'], r['masks'], r['class_ids'], 
+                            labels, r['scores'])

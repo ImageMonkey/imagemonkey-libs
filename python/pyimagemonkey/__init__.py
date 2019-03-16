@@ -6,6 +6,7 @@ from pyimagemonkey.statistics import TrainingStatistics
 from pyimagemonkey.statistics import DefaultTrainingStatistics
 from pyimagemonkey.filters import DatasetFilter
 from pyimagemonkey.filters import LimitDatasetFilter
+from pyimagemonkey.test_models import TestImageClassificationModel
 
 
 __all__ = [
@@ -16,5 +17,6 @@ __all__ = [
     'TrainingStatistics',
     'DefaultTrainingStatistics',
     'DatasetFilter',
-    'LimitDatasetFilter'
+    'LimitDatasetFilter',
+    'TestImageClassificationModel'
 ]

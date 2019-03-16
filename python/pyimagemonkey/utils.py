@@ -18,6 +18,7 @@ import io
 import urllib
 import pyimagemonkey.tf_pipeline_configs as tf_pipeline_configs
 import pyimagemonkey.helper as helper
+import pyimagemonkey.tensorflow_helper as tf_helper
 
 
 def _group_annotations_per_label(annotations):
@@ -102,87 +103,13 @@ class TensorflowTrainer(object):
 				#installed_tensorflow_version = self._get_installed_tensorflow_version() 
 				#if installed_tensorflow_version is None:
 				#	raise ImageMonkeyGeneralError("trying to download tensorflow retrain script...couldn't find tensorflow. is it installed?")
-				self._download_release_specific_retrain_py(("v1.8.0"))
+				tf_helper.download_release_specific_retrain_py("v1.8.0", self._retrain_py)
 
 			#if not self._object_detection_py_exists():
 			#	installed_tensorflow_version = self._get_installed_tensorflow_version() 
 			#	if installed_tensorflow_version is None:
 			#		raise ImageMonkeyGeneralError("trying to download tensorflow object detection scripts...couldn't find tenorflow. is it installed?")
 			#	self._download_release_specific_objection_detection_py(("v" + installed_tensorflow_version))
-
-
-	def _get_installed_tensorflow_version(self):
-		installed_packages = pip.get_installed_distributions()
-		for i in installed_packages:
-			if i.key == "tensorflow":
-				return i.version
-		return None
-
-	def _get_available_tensorflow_releases(self, product_type=ProductType.TENSORFLOW):
-		releases = []
-		url = ""
-		if product_type == ProductType.TENSORFLOW:
-			url = "https://api.github.com/repos/tensorflow/tensorflow/releases"
-		elif product_type == ProductType.TENSORFLOW_MODELS:
-			url = "https://api.github.com/repos/tensorflow/models/releases"
-		else:
-			raise ImageMonkeyGeneralError("Invalid Tensorflow Product type")
-
-		resp = requests.get(url)
-		if resp.status_code != 200:
-			raise ImageMonkeyGeneralError("Couldn't fetch available tensorflow releases")
-		data = resp.json()
-		for elem in data:
-			releases.append(elem["tag_name"])
-		return releases
-
-	def _get_commit_hash_for_tensorflow_release(self, release, product_type=ProductType.TENSORFLOW):
-		url = ""
-		if product_type == ProductType.TENSORFLOW:	
-			url = "https://api.github.com/repos/tensorflow/tensorflow/tags"
-		elif product_type == ProductType.TENSORFLOW_MODELS:
-			url = "https://api.github.com/repos/tensorflow/models/tags"
-		else:
-			raise ImageMonkeyGeneralError("Invalid Tensorflow Product type")
-		resp = requests.get(url)
-		if resp.status_code != 200:
-			raise ImageMonkeyGeneralError("Couldn't fetch available tensorflow tags")
-		data = resp.json()
-		for elem in data:
-			if elem["name"] == release:
-				commit_id = elem["commit"]["sha"] 
-				return commit_id
-		return None
-
-	def _download_release_specific_retrain_py(self, release):
-		releases = self._get_available_tensorflow_releases(product_type=ProductType.TENSORFLOW)
-		if release not in releases:
-			raise ImageMonkeyGeneralError("'%s' is not a valid tensorflow release" %(release,))
-		commit_id = self._get_commit_hash_for_tensorflow_release(release, product_type=ProductType.TENSORFLOW)
-		if commit_id is None:
-			raise ImageMonkeyGeneralError("fetching tensorflow commit hash...'%s' is not a valid tensorflow release" %(release,))
-
-		#download release specific retrain.py
-		url = "https://raw.githubusercontent.com/tensorflow/tensorflow/%s/tensorflow/examples/image_retraining/retrain.py" %(commit_id,)
-		resp = requests.get(url)
-		if resp.status_code != 200:
-			raise ImageMonkeyGeneralError("Couldn't get release specific tensorflow retrain.py")
-		with open(self._retrain_py, "wb") as f:
-			f.write(resp.content)
-
-
-	"""def _download_release_specific_objection_detection_py(self, release):
-		releases = self._get_available_tensorflow_releases(product_type=ProductType.TENSORFLOW)
-		if release not in releases:
-			raise ImageMonkeyGeneralError("'%s' is not a valid tensorflow release" %(release,))
-		commit_id = self._get_commit_hash_for_tensorflow_release("v.1.6.0", product_type=ProductType.TENSORFLOW_MODELS)
-		#commit_id = self._get_commit_hash_for_tensorflow_release(release, product_type=ProductType.TENSORFLOW_MODELS) USE MEEEE
-		if commit_id is None:
-			raise ImageMonkeyGeneralError("fetching tensorflow commit hash...'%s' is not a valid tensorflow models release" %(release,))
-
-		#download release specific object_detection 
-		url = "https://raw.githubusercontent.com/tensorflow/models/%s/object_detection" %(commit_id,)
-		print(url)"""
 
 
 
@@ -245,11 +172,6 @@ class TensorflowTrainer(object):
 				log.info("Success! The model is available at: %s" %((self._model_output_dir + os.path.sep + "graph.pb")))
 				return
 
-
-		#for line in iter(process.stdout.readline, b''):
-		#	print(line.rstrip())
-		#	log.info(line.rstrip())
-
 	def _image_classification_sanity_check(self, categories):
 		log.debug("Running image classification sanity check")
 		#it doesn't make sense to run tensorflow on image categories where we have less than 20 images
@@ -302,6 +224,11 @@ class TensorflowTrainer(object):
 
 		elif train_type == Type.OBJECT_DETECTION:
 			data = self._export_data_and_download_images(labels, min_probability, only_annotated=True)
+
+			if self._statistics is not None:
+				self._statistics.output_path = self._statistics_dir + os.path.sep + "statistics.json"
+				self._statistics.generate(d)
+				self._statistics.save()
 
 			self._train_object_detection(labels, data, learning_rate)
 
