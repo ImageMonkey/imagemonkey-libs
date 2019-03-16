@@ -6,6 +6,7 @@ import io
 import json
 import secrets
 import traceback
+from six.moves import input as raw_input
 
 FOLDERNAME = ""
 BASEURL = 'https://api.imagemonkey.io' #'http://127.0.0.1:8081'
@@ -39,7 +40,7 @@ def _confirm(files, image_collection, labels):
 		print(path + os.path.sep + file)
 
 	print("\n")
-	line = input("Are you sure? [yes/no]\n")
+	line = raw_input("Are you sure? [yes/no]\n")
 	if line == "yes":
 		return True
 	return False
@@ -49,34 +50,27 @@ def _parse_and_validate_labels_file(path):
 	with open(path) as f:
 		data = json.load(f)
 
-	if "labels" not in data:
-		print("labels are missing - please specify at least one label!")
-		sys.exit(1)
-
-	labels = data["labels"]
-	if len(labels) == 0:
-		print("labels are missing - please specify at least one label!")
-		sys.exit(1)
-
+	
 	parsed_data = []
-	for idx, item in enumerate(labels):
-		if "label" not in item:
-			print("Couldn't parse labels file - expected a property 'label' in \n\n\t%s." %(item,))
-			sys.exit(1)
+	if "labels" in data:
+		for idx, item in enumerate(labels):
+			if "label" not in item:
+				print("Couldn't parse labels file - expected a property 'label' in \n\n\t%s." %(item,))
+				sys.exit(1)
 
-		if "annotatable" not in item:
-			print("Couldn't parse labels file - expected a property 'annotatable' in\n\n\t%s." %(item,))
-			sys.exit(1)
+			if "annotatable" not in item:
+				print("Couldn't parse labels file - expected a property 'annotatable' in\n\n\t%s." %(item,))
+				sys.exit(1)
 
-		if type(item["label"]) is not str:
-			print("Couldn't parse labels file - property 'label' in\n\n\t%s\nneeds to be of type 'str'.\n\n" %(item,))
-			sys.exit(1)
+			if type(item["label"]) is not str:
+				print("Couldn't parse labels file - property 'label' in\n\n\t%s\nneeds to be of type 'str'.\n\n" %(item,))
+				sys.exit(1)
 
-		if type(item["annotatable"]) is not bool:
-			print("Couldn't parse labels file - property 'annotatable' in\n\n\t%s\nneeds to be of type 'boolean'.\n\n" %(item,))
-			sys.exit(1)
+			if type(item["annotatable"]) is not bool:
+				print("Couldn't parse labels file - property 'annotatable' in\n\n\t%s\nneeds to be of type 'boolean'.\n\n" %(item,))
+				sys.exit(1)
 
-		parsed_data.append(item)
+			parsed_data.append(item)
 
 	image_collection = None
 	if "image_collection" in data:
@@ -112,16 +106,18 @@ def _push(full_path, image_collection, labels):
 		'image': ('file.jpg', img_bytes, 'image/jpg'),
 	}
 
+	formdata = {}
 	if image_collection is not None:
-		multipart_formdata["image_collection"] = image_collection
+		formdata["image_collection"] = image_collection
 
 	print("Pushing: %s" %(full_path,))
 	try:
-		response = requests.post(url, files=multipart_formdata, headers={"X-Api-Token": secrets.X_API_TOKEN})#, data={'label' : label})
+		response = requests.post(url, files=multipart_formdata, data=formdata, headers={"X-Api-Token": secrets.X_API_TOKEN})#, data={'label' : label})
 		if not response.status_code == 200:
 			print("Couldn't push %s: failed with status code: %d, error: %s" %(f, response.status_code, response.text,))
 		else:
-			_add_labels(response.json()["uuid"], labels)
+			if len(labels) > 0:
+				_add_labels(response.json()["uuid"], labels)
 	except Exception as e:
 		traceback.print_exc()
 		print("Timeout for %s: " %(f,))
@@ -173,7 +169,7 @@ if __name__ == "__main__":
 
 	files = os.listdir(path)
 
-	if not _confirm(files, labels):
+	if not _confirm(files, image_collection, labels):
 		print("aborted due to user input")
 		sys.exit(1)
 
