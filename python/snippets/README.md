@@ -25,7 +25,7 @@ The following document describes how to easily upload images to ImageMonkey and 
 * Create a json file which contains a list of all labels that apply to the files in the folder. The json file needs to be at the same level as the folder and needs to have the same name as the folder (just with a `.json` suffix). 
 The json file needs to have the following syntax: 
 ```
-[
+"labels" : [
     {
         "label": "first label",
         "annotatable": true
@@ -43,7 +43,7 @@ e.q: Assume we want to push all the images in the folder `apple` to ImageMonkey.
 So our json file could look like this:
 
 ```
-[
+"labels": [
     {
         "label": "apple",
         "annotatable": true
