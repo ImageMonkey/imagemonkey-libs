@@ -68,12 +68,14 @@ So our json file could look like this:
 
 ![alt text](https://raw.githubusercontent.com/bbernhard/imagemonkey-libs/master/python/doc/snippets/img/confirm.png)
 
-# Assign uploaded images to an existing Image Collection
+# Assign images to an existing Image Collection
 
 The script also allows you to assign uploaded images to an existing image collection (to group images). In order to do so,
 create a new image collection in your profile: 
 
+![alt text](https://raw.githubusercontent.com/bbernhard/imagemonkey-libs/master/python/doc/snippets/img/create_image_collection_1.png)
 
+![alt text](https://raw.githubusercontent.com/bbernhard/imagemonkey-libs/master/python/doc/snippets/img/image_collection.png)
 
 Next, change your `*.json` file and add the name of the created image collection.
 
