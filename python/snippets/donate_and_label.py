@@ -100,7 +100,12 @@ def _add_labels(uuid, labels):
 def _push(full_path, image_collection, labels):
 	url = BASEURL + '/v1/donate?add_sublabels=false'
 
-	img_bytes = _load_img_and_resize(full_path)
+	img_bytes = None
+	try:
+		img_bytes = _load_img_and_resize(full_path)
+	except ValueError:
+		print("Couldn't push image %s - invalid image" %(full_path,))
+		return
 
 	multipart_formdata = {
 		'image': ('file.jpg', img_bytes, 'image/jpg'),
@@ -143,7 +148,7 @@ def _load_img_and_resize(path):
 
 
 	#get binary representation
-	img = img.resize((new_width, new_height), Image.ANTIALIAS)
+	img = img.resize((int(new_width), int(new_height)), Image.ANTIALIAS)
 
 	output = io.BytesIO()
 	img.save(output, format='JPEG')
