@@ -25,7 +25,7 @@ The following document describes how to easily upload images to ImageMonkey and 
 * Create a json file which contains a list of all labels that apply to the files in the folder. The json file needs to be at the same level as the folder and needs to have the same name as the folder (just with a `.json` suffix). 
 The json file needs to have the following syntax: 
 ```
-[
+"labels" : [
     {
         "label": "first label",
         "annotatable": true
@@ -43,7 +43,7 @@ e.q: Assume we want to push all the images in the folder `apple` to ImageMonkey.
 So our json file could look like this:
 
 ```
-[
+"labels": [
     {
         "label": "apple",
         "annotatable": true
@@ -61,7 +61,38 @@ So our json file could look like this:
 
 *Tip: It's a good idea to put images in the same folder, that share the most labels together.*
 
-* Open a command line, `cd` to the directory your Python script resides and start it with `python donate_and_label.py`
+* In order to run the script, `cd` to the directory your Python script resides and start it with `python donate_and_label.py`
 * The script now gives you a quick summary what it will be doing. **Please verify that you have specified the correct folder and label names.**
 
+
+
 ![alt text](https://raw.githubusercontent.com/bbernhard/imagemonkey-libs/master/python/doc/snippets/img/confirm.png)
+
+# Assign uploaded images to an existing Image Collection
+
+The script also allows you to assign uploaded images to an existing image collection (to group images). In order to do so,
+create a new image collection in your profile: 
+
+
+
+Next, change your `*.json` file and add the name of the created image collection.
+
+e.q: 
+
+```
+"image_collection": "my-collection",
+"labels": [
+    {
+        "label": "apple",
+        "annotatable": true
+    },
+    {
+        "label": "table",
+        "annotatable": true
+    },
+    {
+        "label": "knife",
+        "annotatable": true
+    }
+]
+```
