@@ -48,7 +48,7 @@ RUN cd /root/tensorflow_models/research/ \
 
 ENV PYTHONPATH $PYTHONPATH:/root/tensorflow_models/research/object_detection/utils
 
-mkdir -p /tmp/image_classification_test/
+RUN mkdir -p /tmp/image_classification_test/
 
 WORKDIR /
 ENTRYPOINT ["/bin/bash"]
