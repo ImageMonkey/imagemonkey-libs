@@ -1,6 +1,6 @@
 FROM tensorflow/tensorflow:latest-gpu
 
-RUN apt-get update && apt-get install -y git dos2unix curl nginx nginx-extras wget unzip python3-pip python3-tabulate
+RUN apt-get update && apt-get install -y git dos2unix curl nginx nginx-extras wget unzip python3-pip python3-tabulate python-opencv
 
 RUN rm /usr/bin/python \
    && ln -s /usr/bin/python3 /usr/bin/python
@@ -48,5 +48,7 @@ WORKDIR /
 ENTRYPOINT ["/bin/bash"]
 
 ENV PYTHONPATH $PYTHONPATH:/root/tensorflow_models/research/object_detection/utils
+
+RUN mkdir -p /tmp/image_classification_test/
 
 # docker run -it imagemonkey-train /bin/bash
