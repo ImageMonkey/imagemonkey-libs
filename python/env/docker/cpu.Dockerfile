@@ -40,6 +40,7 @@ RUN pip3 install --force-reinstall keras==2.0.8
 
 
 RUN pip3 install --force-reinstall scikit-image==0.13
+RUN pip3 install --force-reinstall numpy==1.15.4
 
 RUN cd /tmp && wget -O protoc.zip https://github.com/protocolbuffers/protobuf/releases/download/v3.6.1/protoc-3.6.1-linux-x86_64.zip
 RUN cd /tmp && unzip protoc.zip -d /tmp/protoc
