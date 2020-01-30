@@ -19,7 +19,10 @@ RUN git clone https://github.com/tensorflow/models.git /root/tensorflow_models \
 RUN git clone https://github.com/bbernhard/Mask_RCNN /home/imagemonkey/mask_rcnn
 RUN cd /home/imagemonkey/mask_rcnn/ && git checkout save_only_best_checkpoint
 
+RUN pip3 install --upgrade setuptools
 RUN pip3 install -r /home/imagemonkey/mask_rcnn/requirements.txt
+RUN pip3 install --upgrade pip \
+	&& hash -r pip3
 RUN cd /home/imagemonkey/mask_rcnn/ && python setup.py install
 
 RUN ln -s /home/imagemonkey/imagemonkey-libs/python/pyimagemonkey/scripts/monkey.py /home/imagemonkey/bin/monkey

@@ -3,6 +3,10 @@ from pyimagemonkey.exceptions import *
 from pyimagemonkey.type import *
 import pip
 
+class ProductType(enum.Enum):
+	TENSORFLOW = 0
+	TENSORFLOW_MODELS = 1
+
 
 def get_installed_tensorflow_version():
 	installed_packages = pip.get_installed_distributions()
@@ -72,7 +76,7 @@ def download_release_specific_label_image_py(release, download_path):
 	if commit_id is None:
 		raise ImageMonkeyGeneralError("fetching tensorflow commit hash...'%s' is not a valid tensorflow release" %(release,))
 
-	#download release specific retrain.py
+	#download release specific label_image.py
 	url = "https://raw.githubusercontent.com/tensorflow/tensorflow/%s/tensorflow/examples/label_image/label_image.py" %(commit_id,)
 	resp = requests.get(url)
 	if resp.status_code != 200:
