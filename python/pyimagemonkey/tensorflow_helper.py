@@ -37,9 +37,9 @@ def get_available_tensorflow_releases(product_type=ProductType.TENSORFLOW):
 def get_commit_hash_for_tensorflow_release(release, product_type=ProductType.TENSORFLOW):
 	url = ""
 	if product_type == ProductType.TENSORFLOW:	
-		url = "https://api.github.com/repos/tensorflow/tensorflow/tags"
+		url = "https://api.github.com/repos/tensorflow/tensorflow/tags?page=1&per_page=1000"
 	elif product_type == ProductType.TENSORFLOW_MODELS:
-		url = "https://api.github.com/repos/tensorflow/models/tags"
+		url = "https://api.github.com/repos/tensorflow/models/tags?page=1&per_page=1000"
 	else:
 		raise ImageMonkeyGeneralError("Invalid Tensorflow Product type")
 	resp = requests.get(url)
