@@ -33,12 +33,6 @@ def _group_annotations_per_label(annotations):
 
 	return result
 
-class ProductType(enum.Enum):
-	TENSORFLOW = 0
-	TENSORFLOW_MODELS = 1
-
-
-
 log = logging.getLogger(__name__)
 log.addHandler(logging.NullHandler())
 
