@@ -74,6 +74,8 @@ if __name__ == "__main__":
 	test_model_parser.add_argument("--model", help="Path to model file", required=True)
 	test_model_parser.add_argument("--labels", help="Path to labels", required=True)
 	test_model_parser.add_argument("--image", help="Path to image", required=True)
+	test_model_parser.add_argument("--output-image", help="Path to output image", required=False, default=None)
+	test_model_parser.add_argument("--verbose", help="verbosity", required=False, default=False)
 
 	args = parser.parse_args()
 
@@ -234,5 +236,5 @@ if __name__ == "__main__":
 		if args.type == "image-classification":
 			directory = "/tmp/image_classification_test/"
 			test_image_classification_model = TestImageClassificationModel(args.model, args.labels, directory, clear_before_start=True)
-			test_image_classification_model.label_image(args.image)
+			test_image_classification_model.label_image(args.image, args.output_image)
 		
