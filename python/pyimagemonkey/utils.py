@@ -22,406 +22,408 @@ import pyimagemonkey.tensorflow_helper as tf_helper
 
 
 def _group_annotations_per_label(annotations):
-	result = {}
-	for annotation in annotations:
-		try:
-			annos = result[annotation.label]
-			annos.append(annotation)
-			result[annotation.label] = annos
-		except KeyError:
-			result[annotation.label] = [annotation]
+        result = {}
+        for annotation in annotations:
+                try:
+                        annos = result[annotation.label]
+                        annos.append(annotation)
+                        result[annotation.label] = annos
+                except KeyError:
+                        result[annotation.label] = [annotation]
 
-	return result
+        return result
 
 log = logging.getLogger(__name__)
 log.addHandler(logging.NullHandler())
 
 class TensorflowTrainer(object):
-	def __init__(self, training_dir, clear_before_start=False, auto_download_tensorflow_train_script=True, 
-					tf_object_detection_models_path=None, statistics=None, filter_dataset=None):
-		self._training_dir = training_dir
-		self._auto_download_tensorflow_train_script = auto_download_tensorflow_train_script
-		self._images_dir = training_dir + os.path.sep + "images"
-		self._model_output_dir = training_dir + os.path.sep + "output"
-		self._models_dir = training_dir + os.path.sep + "models"
-		self._checkpoints_dir = training_dir + os.path.sep + "checkpoints"
-		self._model_output_tmp_dir = self._model_output_dir + os.path.sep + "tmp"
-		self._image_classification_output_tmp_dir = self._model_output_tmp_dir + os.path.sep + "image_classification" + os.path.sep + "categories"
-		self._statistics_dir = self._model_output_dir + os.path.sep + "statistics"
-		self._object_detection_output_tmp_dir = self._model_output_tmp_dir + os.path.sep + "object_detection"
-		self._retrain_py_dir = self._models_dir
-		#self._object_detection_py_dir = self._models_dir + os.path.sep + "pyobject_detection"
-		self._object_detection_tfrecord_path = self._object_detection_output_tmp_dir  + os.path.sep + "data.tfrecord"
-		self._object_detection_label_map_path = self._object_detection_output_tmp_dir  + os.path.sep + "label_map.pbtxt"
-		self._object_detection_pipeline_config_path = self._object_detection_output_tmp_dir + os.path.sep + "tf_pipeline.config"
-		self._retrain_py = self._retrain_py_dir + os.path.sep + "retrain.py"
-		self._tf_object_detection_models_path = tf_object_detection_models_path
-		self._statistics = statistics
-		self._filter = filter_dataset
-		self._api = API(api_version=1)
-
-		if clear_before_start:
-			if os.path.exists(self._images_dir):
-				self.clear_images_dir()
-		else:
-			if not self.is_images_dir_empty():
-				raise ImageMonkeyGeneralError("training directory %s needs to be empty" %(self._images_dir,)) 
-
-		#create output, output tmp dir and images dir
-		if not os.path.exists(self._model_output_dir):
-			os.makedirs(self._model_output_dir)
-
-		if not os.path.exists(self._model_output_tmp_dir):
-			os.makedirs(self._model_output_tmp_dir)
-
-		if not os.path.exists(self._image_classification_output_tmp_dir):
-			os.makedirs(self._image_classification_output_tmp_dir)
-
-		if not os.path.exists(self._statistics_dir):
-			os.makedirs(self._statistics_dir)
-
-		if not os.path.exists(self._object_detection_output_tmp_dir):
-			os.makedirs(self._object_detection_output_tmp_dir)
-
-		if not os.path.exists(self._images_dir):
-			os.makedirs(self._images_dir)
-
-		if not os.path.exists(self._models_dir):
-			os.makedirs(self._models_dir)
-
-		if not os.path.exists(self._checkpoints_dir):
-			os.makedirs(self._checkpoints_dir)
-
-		if self._auto_download_tensorflow_train_script:
-			if not self._retrain_py_exists():
-				#installed_tensorflow_version = self._get_installed_tensorflow_version() 
-				#if installed_tensorflow_version is None:
-				#	raise ImageMonkeyGeneralError("trying to download tensorflow retrain script...couldn't find tensorflow. is it installed?")
-				tf_helper.download_release_specific_retrain_py("v1.8.0", self._retrain_py)
-
-			#if not self._object_detection_py_exists():
-			#	installed_tensorflow_version = self._get_installed_tensorflow_version() 
-			#	if installed_tensorflow_version is None:
-			#		raise ImageMonkeyGeneralError("trying to download tensorflow object detection scripts...couldn't find tenorflow. is it installed?")
-			#	self._download_release_specific_objection_detection_py(("v" + installed_tensorflow_version))
-
-
-
-	def clear_images_dir(self):
-		for f in os.listdir(self._images_dir):
-			filePath = os.path.join(self._images_dir, f)
-			try:
-				if os.path.isfile(filePath):
-					os.unlink(filePath)
-				elif os.path.isdir(filePath): shutil.rmtree(filePath)
-			except Exception as e:
-				log.error("Couldn't clear images directory %s" %(self._images_dir,))
-				raise ImageMonkeyGeneralError("Couldn't clear images directory %s" %(self._images_dir,)) 
-
-
-	def is_images_dir_empty(self):
-		if len(os.listdir(self._images_dir)) == 0:
-			return True
-		return False
-
-	def _create_category_dir(self, category):
-		path = self._images_dir + os.path.sep + category
-		if os.path.exists(path):
-			log.info("Directory %s already exists!" %(path,))
-			raise ImageMonkeyGeneralError("Directory %s already exists!" %(path,)) 
-		
-		os.makedirs(path)
-
-	def _category_dir_exists(self, category):
-		path = self._images_dir + os.path.sep + category
-		if os.path.exists(path):
-			return True
-		return False
-
-	def _retrain_py_exists(self):
-		if os.path.exists(self._retrain_py):
-			return True
-		return False
-
-	"""def _object_detection_py_exists(self):
-		if os.path.exists(self._object_detection_py_dir):
-			return True
-		return False"""
-
-
-	def _run_command(self, command, cwd=None, env=None):
-		process = None
-		if cwd is None:
-			process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=sys.stdout, shell=True, universal_newlines=True)
-		else:
-			if env is None:
-				process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=sys.stdout, shell=True, universal_newlines=True, cwd=cwd)
-			else:
-				process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=sys.stdout, shell=True, universal_newlines=True, cwd=cwd, env=env)
-
-		for line in iter(process.stdout.readline, b''):
-			print(line.rstrip())
-			log.info(line.rstrip())
-			if process.poll() is not None:
-				log.info("Success! The model is available at: %s" %((self._model_output_dir + os.path.sep + "graph.pb")))
-				return
-
-	def _image_classification_sanity_check(self, categories):
-		log.debug("Running image classification sanity check")
-		#it doesn't make sense to run tensorflow on image categories where we have less than 20 images
-		#see https://github.com/tensorflow/tensorflow/issues/2072
-		for category in categories:
-			dir = self._images_dir + os.path.sep + category
-			files = os.listdir(dir)
-			if len(files) < 20:
-				raise ImageMonkeyGeneralError("Cannot run tensorflow image classification on catoriges with less than 20 images. %s has less than 20 images!" %(category,))
-
-
-
-
-	def _train_image_classification(self):
-		log.debug("Starting tensorflow retrain")
-		cmd = ("python " + self._retrain_py + " --image_dir " + self._images_dir + os.path.sep
-			+ " --output_graph " + (self._model_output_dir + os.path.sep + "graph.pb") + " --output_labels " + (self._model_output_dir + os.path.sep + "labels.txt")
-			+ " --intermediate_output_graphs_dir " + self._image_classification_output_tmp_dir + " --model_dir " + self._models_dir
-			+ " --bottleneck_dir " + self._image_classification_output_tmp_dir)
-		self._run_command(cmd)
-
-	def _export_data_and_download_images(self, labels, min_probability, only_annotated):
-		for label in labels:
-			if not self._category_dir_exists(label):
-				self._create_category_dir(label)
-
-		res = self._api.export(labels, min_probability, only_annotated=only_annotated)
-		if self._filter is not None:
-			res = self._filter.filter(res)
-
-		for elem in res:
-			for validation in elem.validations:
-				folder = self._images_dir + os.path.sep + validation.label
-				self._api.download_image(elem.image.uuid, folder)
-
-		return res
-
-
-	def train(self, labels, min_probability = 0.8, train_type=Type.IMAGE_CLASSIFICATION, learning_rate = None):
-		if train_type == Type.IMAGE_CLASSIFICATION:
-			d = self._export_data_and_download_images(labels, min_probability, only_annotated=False)
-			self._image_classification_sanity_check(labels)
-
-			if self._statistics is not None:
-				self._statistics.output_path = self._statistics_dir + os.path.sep + "statistics.json"
-				self._statistics.generate(d)
-				self._statistics.save()
-
-			self._train_image_classification()
-
-		elif train_type == Type.OBJECT_DETECTION:
-			data = self._export_data_and_download_images(labels, min_probability, only_annotated=True)
-
-			if self._statistics is not None:
-				self._statistics.output_path = self._statistics_dir + os.path.sep + "statistics.json"
-				self._statistics.generate(data)
-				self._statistics.save()
-
-			self._train_object_detection(labels, data, learning_rate)
-
-
-	def _train_object_detection(self, categories, entries, learning_rate):
-		self._download_checkpoint_if_not_exist("ssd_mobilenet_v1_coco_11_06_2017")
-		self._copy_checkpoint_to_training_dir("ssd_mobilenet_v1_coco_11_06_2017")
-		self._write_tf_record_file(categories, entries)
-		self._write_labels_map(categories)
-		self._write_tf_pipeline_config(categories, learning_rate)
-		self._start_object_detection()
-
-	def _start_object_detection(self):
-		if self._tf_object_detection_models_path is None:
-			raise ImageMonkeyGeneralError("Please provide the base path to your local tensorflow models directory first")
-
-		object_detection_py = (self._tf_object_detection_models_path + os.path.sep + 
-								"research" + os.path.sep + "object_detection" + os.path.sep + "legacy" + os.path.sep + "train.py")
-		if not os.path.exists(object_detection_py):
-			raise ImageMonkeyGeneralError("Couldn't find train.py in %s. Is your tensorflow models base directory correctly set?" %(object_detection_py,))
-
-		log.debug("Starting tensorflow object detection training")
-
-		#add tensorflow models to Python path
-		my_env = os.environ.copy()
-		my_env["PYTHONPATH"] = ((self._tf_object_detection_models_path + os.path.sep + "research") + os.pathsep 
-								+ (self._tf_object_detection_models_path + os.path.sep + "research" + os.path.sep + "slim"))
-
-
-		cmd = ("python " + object_detection_py + " --pipeline_config_path=" + self._object_detection_pipeline_config_path 
-				+ " --train_dir=" + self._object_detection_output_tmp_dir)
-		#print(cmd)
-		self._run_command(cmd, cwd=self._object_detection_output_tmp_dir, env=my_env)
-
-	def _handle_checkpoint_download_progress(self, count, block_size, total_size):
-		percent = int(count * block_size * 100 / total_size)
-		print("[%d] Downloading Checkpoint" %(percent,))
-
-	def _download_checkpoint_if_not_exist(self, dataset_name):
-		url = "http://download.tensorflow.org/models/object_detection/%s.tar.gz" %(dataset_name,)
-
-		path_without_suffix = self._checkpoints_dir + os.path.sep + dataset_name
-		path = path_without_suffix + ".tar.gz"
-		if not os.path.exists(path):
-			log.info("Checkpoint doesn't exist...downloading %s" %(url,))
-			urllib.request.urlretrieve(url, path, self._handle_checkpoint_download_progress)
-			#TODO: handle urllib exception + remove partialy downloaded file in that case
-		else:
-			log.info("Checking if checkpoint exists...found")
-
-		#check if checkpoints archive is already extracted
-		if helper.directory_exists(path_without_suffix):
-			if os.listdir(path_without_suffix) == []:
-				helper.extract_tar_gz(path, self._checkpoints_dir)
-		else:
-			log.info("Extracting object detection checkpoint")
-			helper.extract_tar_gz(path, self._checkpoints_dir)
-
-	def _copy_checkpoint_to_training_dir(self, dataset_name):
-		log.info("Copying checkpoint to training directory")
-		path = self._checkpoints_dir + os.path.sep + dataset_name
-		files = os.listdir(path)
-		for file in files:
-			file_name = os.path.join(path, file)
-			dest_file_name = self._object_detection_output_tmp_dir + os.path.sep + file
-			if os.path.isfile(file_name):
-				shutil.copy(file_name, dest_file_name)
-
-
-	def _write_tf_pipeline_config(self, categories, learning_rate):
-		with open(self._object_detection_pipeline_config_path, "w") as f:
-			cfg = tf_pipeline_configs.SSD_MOBILENET_V1
-			cfg = cfg.replace("num_classes: xxx", "num_classes: %d" %(len(categories)))
-
-			if learning_rate is None: #default initial learning rate
-				cfg = cfg.replace("INITIAL_LEARNING_RATE", "0.004")
-			else:
-				cfg = cfg.replace("INITIAL_LEARNING_RATE", learning_rate)
-
-			#tensorflow doesn't like backslashes in the pipeline config, so replace
-			#backslashes with forward slash.
-			unix_path = self._object_detection_output_tmp_dir.replace('\\', '/')
-			
-			cfg = cfg.replace("PATH_TO_BE_CONFIGURED", unix_path)
-			f.write(cfg)
-		
-
-
-	def _write_tf_record_file(self, categories, entries):
-		is_empty = True
-		writer = tf.python_io.TFRecordWriter(self._object_detection_tfrecord_path)
-		for entry in entries:
-			grouped_annotations = _group_annotations_per_label(entry.annotations)
-			for key, annotations in grouped_annotations.items():
-				path = self._images_dir + os.path.sep + key + os.path.sep + entry.image.uuid + ".jpg"
-				if os.path.exists(path):
-					img = Image.open(path).convert('RGB')
-					tfrecord = self._create_tf_entry(categories, img, key, entry.image.uuid, annotations)
-					if tfrecord is not None:
-						is_empty = False
-						log.debug("Adding image %s to tfrecord file" %(entry.image.uuid,))
-						writer.write(tfrecord.SerializeToString())
-		writer.close()
-
-		if is_empty:
-			raise ImageMonkeyGeneralError("Nothing to train (tfrecord file empty)") 
-
-	def _create_tf_entry(self, categories, img, label, filename, annotations):
-		imageFormat = b'jpg'
-
-		width, height = img.size
-
-		imgByteArr = io.BytesIO()
-		img.save(imgByteArr, format='JPEG')
-		encodedImageData = imgByteArr.getvalue()
-
-		xmins = []
-		xmaxs = []
-		ymins = []
-		ymaxs = []
-
-		for annotation in annotations:
-			rect = None
-			if type(annotation.data) is Rectangle: #currently we only support Rect annotations, TODO: change me
-				rect = annotation.data
-			elif type(annotation.data) is Polygon:
-				rect = annotation.data.rect
-
-
-			if rect is not None:
-				trimmed_rect = rect.trim(Rectangle(0, 0, width, height)) #scale to image dimension in case annotation exceeds image width/height
-
-				if trimmed_rect.left < 0:
-					raise ImageMonkeyGeneralError("trimmed rect left dimension invalid! (<0)")
-				if trimmed_rect.top < 0:
-					raise ImageMonkeyGeneralError("trimmed rect top dimension invalid! (<0)")
-				if trimmed_rect.width < 0:
-					raise ImageMonkeyGeneralError("trimmed rect width dimension invalid! (<0)")
-				if trimmed_rect.height < 0:
-					raise ImageMonkeyGeneralError("trimmed rect height dimension invalid! (<0)")
-
-				if (trimmed_rect.left + trimmed_rect.width) > width:
-					raise ImageMonkeyGeneralError("bounding box width > image width!")
-				if (trimmed_rect.top + trimmed_rect.height) > height:
-					raise ImageMonkeyGeneralError("bounding box height > image height!")
-
-				xmin = trimmed_rect.left / float(width)
-				xmax = (trimmed_rect.left + trimmed_rect.width) / float(width)
-				ymin = trimmed_rect.top / float(height)
-				ymax = (trimmed_rect.top + trimmed_rect.height) / float(height)
-
-				#sanity checks
-				if xmin > xmax:
-					raise ImageMonkeyGeneralError("xmin > xmax!")
-
-				if ymin > ymax:
-					raise ImageMonkeyGeneralError("ymin > ymax!")
-
-				if (xmin == 0) and (xmax == 0) and (ymin == 0) and (ymax == 0):
-					continue #skip bounding boxes that are 0
-
-				xmins.append(xmin)
-				xmaxs.append(xmax)
-				ymins.append(ymin)
-				ymaxs.append(ymax)
-
-
-
-		#we might have some images in our dataset, which don't have a annotation, skip those
-		if((len(xmins) == 0) or (len(xmaxs) == 0) or (len(ymins) == 0) or (len(ymaxs) == 0)):
-			return None
+        def __init__(self, training_dir, clear_before_start=False, auto_download_tensorflow_train_script=True, 
+                                        tf_object_detection_models_path=None, statistics=None, filter_dataset=None):
+                self._training_dir = training_dir
+                self._auto_download_tensorflow_train_script = auto_download_tensorflow_train_script
+                self._images_dir = training_dir + os.path.sep + "images"
+                self._model_output_dir = training_dir + os.path.sep + "output"
+                self._models_dir = training_dir + os.path.sep + "models"
+                self._checkpoints_dir = training_dir + os.path.sep + "checkpoints"
+                self._model_output_tmp_dir = self._model_output_dir + os.path.sep + "tmp"
+                self._image_classification_output_tmp_dir = self._model_output_tmp_dir + os.path.sep + "image_classification" + os.path.sep + "categories"
+                self._statistics_dir = self._model_output_dir + os.path.sep + "statistics"
+                self._object_detection_output_tmp_dir = self._model_output_tmp_dir + os.path.sep + "object_detection"
+                self._retrain_py_dir = self._models_dir
+                #self._object_detection_py_dir = self._models_dir + os.path.sep + "pyobject_detection"
+                self._object_detection_tfrecord_path = self._object_detection_output_tmp_dir  + os.path.sep + "data.tfrecord"
+                self._object_detection_label_map_path = self._object_detection_output_tmp_dir  + os.path.sep + "label_map.pbtxt"
+                self._object_detection_pipeline_config_path = self._object_detection_output_tmp_dir + os.path.sep + "tf_pipeline.config"
+                self._retrain_py = self._retrain_py_dir + os.path.sep + "retrain.py"
+                self._tf_object_detection_models_path = tf_object_detection_models_path
+                self._statistics = statistics
+                self._filter = filter_dataset
+                self._api = API(api_version=1)
+
+                if clear_before_start:
+                        if os.path.exists(self._images_dir):
+                                self.clear_images_dir()
+                else:
+                        if not self.is_images_dir_empty():
+                                raise ImageMonkeyGeneralError("training directory %s needs to be empty" %(self._images_dir,)) 
+
+                #create output, output tmp dir and images dir
+                if not os.path.exists(self._model_output_dir):
+                        os.makedirs(self._model_output_dir)
+
+                if not os.path.exists(self._model_output_tmp_dir):
+                        os.makedirs(self._model_output_tmp_dir)
+
+                if not os.path.exists(self._image_classification_output_tmp_dir):
+                        os.makedirs(self._image_classification_output_tmp_dir)
+
+                if not os.path.exists(self._statistics_dir):
+                        os.makedirs(self._statistics_dir)
+
+                if not os.path.exists(self._object_detection_output_tmp_dir):
+                        os.makedirs(self._object_detection_output_tmp_dir)
+
+                if not os.path.exists(self._images_dir):
+                        os.makedirs(self._images_dir)
+
+                if not os.path.exists(self._models_dir):
+                        os.makedirs(self._models_dir)
+
+                if not os.path.exists(self._checkpoints_dir):
+                        os.makedirs(self._checkpoints_dir)
+
+                if self._auto_download_tensorflow_train_script:
+                        if not self._retrain_py_exists():
+                                #installed_tensorflow_version = self._get_installed_tensorflow_version() 
+                                #if installed_tensorflow_version is None:
+                                #       raise ImageMonkeyGeneralError("trying to download tensorflow retrain script...couldn't find tensorflow. is it installed?")
+                                tf_helper.download_release_specific_retrain_py("v1.8.0", self._retrain_py)
+
+                        #if not self._object_detection_py_exists():
+                        #       installed_tensorflow_version = self._get_installed_tensorflow_version() 
+                        #       if installed_tensorflow_version is None:
+                        #               raise ImageMonkeyGeneralError("trying to download tensorflow object detection scripts...couldn't find tenorflow. is it installed?")
+                        #       self._download_release_specific_objection_detection_py(("v" + installed_tensorflow_version))
+
+
+
+        def clear_images_dir(self):
+                for f in os.listdir(self._images_dir):
+                        filePath = os.path.join(self._images_dir, f)
+                        try:
+                                if os.path.isfile(filePath):
+                                        os.unlink(filePath)
+                                elif os.path.isdir(filePath): shutil.rmtree(filePath)
+                        except Exception as e:
+                                log.error("Couldn't clear images directory %s" %(self._images_dir,))
+                                raise ImageMonkeyGeneralError("Couldn't clear images directory %s" %(self._images_dir,)) 
+        @property
+        def statistics_dir(self):
+                return self._statistics_dir
+
+        def is_images_dir_empty(self):
+                if len(os.listdir(self._images_dir)) == 0:
+                        return True
+                return False
+
+        def _create_category_dir(self, category):
+                path = self._images_dir + os.path.sep + category
+                if os.path.exists(path):
+                        log.info("Directory %s already exists!" %(path,))
+                        raise ImageMonkeyGeneralError("Directory %s already exists!" %(path,)) 
+                
+                os.makedirs(path)
+
+        def _category_dir_exists(self, category):
+                path = self._images_dir + os.path.sep + category
+                if os.path.exists(path):
+                        return True
+                return False
+
+        def _retrain_py_exists(self):
+                if os.path.exists(self._retrain_py):
+                        return True
+                return False
+
+        """def _object_detection_py_exists(self):
+                if os.path.exists(self._object_detection_py_dir):
+                        return True
+                return False"""
+
+
+        def _run_command(self, command, cwd=None, env=None):
+                process = None
+                if cwd is None:
+                        process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=sys.stdout, shell=True, universal_newlines=True)
+                else:
+                        if env is None:
+                                process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=sys.stdout, shell=True, universal_newlines=True, cwd=cwd)
+                        else:
+                                process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=sys.stdout, shell=True, universal_newlines=True, cwd=cwd, env=env)
+
+                for line in iter(process.stdout.readline, b''):
+                        print(line.rstrip())
+                        log.info(line.rstrip())
+                        if process.poll() is not None:
+                                log.info("Success! The model is available at: %s" %((self._model_output_dir + os.path.sep + "graph.pb")))
+                                return
+
+        def _image_classification_sanity_check(self, categories):
+                log.debug("Running image classification sanity check")
+                #it doesn't make sense to run tensorflow on image categories where we have less than 20 images
+                #see https://github.com/tensorflow/tensorflow/issues/2072
+                for category in categories:
+                        dir = self._images_dir + os.path.sep + category
+                        files = os.listdir(dir)
+                        if len(files) < 20:
+                                raise ImageMonkeyGeneralError("Cannot run tensorflow image classification on catoriges with less than 20 images. %s has less than 20 images!" %(category,))
+
+
+
+
+        def _train_image_classification(self):
+                log.debug("Starting tensorflow retrain")
+                cmd = ("python " + self._retrain_py + " --image_dir " + self._images_dir + os.path.sep
+                        + " --output_graph " + (self._model_output_dir + os.path.sep + "graph.pb") + " --output_labels " + (self._model_output_dir + os.path.sep + "labels.txt")
+                        + " --intermediate_output_graphs_dir " + self._image_classification_output_tmp_dir + " --model_dir " + self._models_dir
+                        + " --bottleneck_dir " + self._image_classification_output_tmp_dir)
+                self._run_command(cmd)
+
+        def _export_data_and_download_images(self, labels, min_probability, only_annotated):
+                for label in labels:
+                        if not self._category_dir_exists(label):
+                                self._create_category_dir(label)
+
+                res = self._api.export(labels, min_probability, only_annotated=only_annotated)
+                if self._filter is not None:
+                        res = self._filter.filter(res)
+
+                for elem in res:
+                        for validation in elem.validations:
+                                folder = self._images_dir + os.path.sep + validation.label
+                                self._api.download_image(elem.image.uuid, folder)
+
+                return res
+
+
+        def train(self, labels, min_probability = 0.8, train_type=Type.IMAGE_CLASSIFICATION, learning_rate = None):
+                if train_type == Type.IMAGE_CLASSIFICATION:
+                        d = self._export_data_and_download_images(labels, min_probability, only_annotated=False)
+                        self._image_classification_sanity_check(labels)
+
+                        if self._statistics is not None:
+                                self._statistics.output_path = self._statistics_dir + os.path.sep + "statistics.json"
+                                self._statistics.generate(d)
+                                self._statistics.save()
+
+                        self._train_image_classification()
+
+                elif train_type == Type.OBJECT_DETECTION:
+                        data = self._export_data_and_download_images(labels, min_probability, only_annotated=True)
+
+                        if self._statistics is not None:
+                                self._statistics.output_path = self._statistics_dir + os.path.sep + "statistics.json"
+                                self._statistics.generate(data)
+                                self._statistics.save()
+
+                        self._train_object_detection(labels, data, learning_rate)
+
+
+        def _train_object_detection(self, categories, entries, learning_rate):
+                self._download_checkpoint_if_not_exist("ssd_mobilenet_v1_coco_11_06_2017")
+                self._copy_checkpoint_to_training_dir("ssd_mobilenet_v1_coco_11_06_2017")
+                self._write_tf_record_file(categories, entries)
+                self._write_labels_map(categories)
+                self._write_tf_pipeline_config(categories, learning_rate)
+                self._start_object_detection()
+
+        def _start_object_detection(self):
+                if self._tf_object_detection_models_path is None:
+                        raise ImageMonkeyGeneralError("Please provide the base path to your local tensorflow models directory first")
+
+                object_detection_py = (self._tf_object_detection_models_path + os.path.sep + 
+                                                                "research" + os.path.sep + "object_detection" + os.path.sep + "legacy" + os.path.sep + "train.py")
+                if not os.path.exists(object_detection_py):
+                        raise ImageMonkeyGeneralError("Couldn't find train.py in %s. Is your tensorflow models base directory correctly set?" %(object_detection_py,))
+
+                log.debug("Starting tensorflow object detection training")
+
+                #add tensorflow models to Python path
+                my_env = os.environ.copy()
+                my_env["PYTHONPATH"] = ((self._tf_object_detection_models_path + os.path.sep + "research") + os.pathsep 
+                                                                + (self._tf_object_detection_models_path + os.path.sep + "research" + os.path.sep + "slim"))
+
+
+                cmd = ("python " + object_detection_py + " --pipeline_config_path=" + self._object_detection_pipeline_config_path 
+                                + " --train_dir=" + self._object_detection_output_tmp_dir)
+                #print(cmd)
+                self._run_command(cmd, cwd=self._object_detection_output_tmp_dir, env=my_env)
+
+        def _handle_checkpoint_download_progress(self, count, block_size, total_size):
+                percent = int(count * block_size * 100 / total_size)
+                print("[%d] Downloading Checkpoint" %(percent,))
+
+        def _download_checkpoint_if_not_exist(self, dataset_name):
+                url = "http://download.tensorflow.org/models/object_detection/%s.tar.gz" %(dataset_name,)
+
+                path_without_suffix = self._checkpoints_dir + os.path.sep + dataset_name
+                path = path_without_suffix + ".tar.gz"
+                if not os.path.exists(path):
+                        log.info("Checkpoint doesn't exist...downloading %s" %(url,))
+                        urllib.request.urlretrieve(url, path, self._handle_checkpoint_download_progress)
+                        #TODO: handle urllib exception + remove partialy downloaded file in that case
+                else:
+                        log.info("Checking if checkpoint exists...found")
+
+                #check if checkpoints archive is already extracted
+                if helper.directory_exists(path_without_suffix):
+                        if os.listdir(path_without_suffix) == []:
+                                helper.extract_tar_gz(path, self._checkpoints_dir)
+                else:
+                        log.info("Extracting object detection checkpoint")
+                        helper.extract_tar_gz(path, self._checkpoints_dir)
+
+        def _copy_checkpoint_to_training_dir(self, dataset_name):
+                log.info("Copying checkpoint to training directory")
+                path = self._checkpoints_dir + os.path.sep + dataset_name
+                files = os.listdir(path)
+                for file in files:
+                        file_name = os.path.join(path, file)
+                        dest_file_name = self._object_detection_output_tmp_dir + os.path.sep + file
+                        if os.path.isfile(file_name):
+                                shutil.copy(file_name, dest_file_name)
+
+
+        def _write_tf_pipeline_config(self, categories, learning_rate):
+                with open(self._object_detection_pipeline_config_path, "w") as f:
+                        cfg = tf_pipeline_configs.SSD_MOBILENET_V1
+                        cfg = cfg.replace("num_classes: xxx", "num_classes: %d" %(len(categories)))
+
+                        if learning_rate is None: #default initial learning rate
+                                cfg = cfg.replace("INITIAL_LEARNING_RATE", "0.004")
+                        else:
+                                cfg = cfg.replace("INITIAL_LEARNING_RATE", learning_rate)
+
+                        #tensorflow doesn't like backslashes in the pipeline config, so replace
+                        #backslashes with forward slash.
+                        unix_path = self._object_detection_output_tmp_dir.replace('\\', '/')
+                        
+                        cfg = cfg.replace("PATH_TO_BE_CONFIGURED", unix_path)
+                        f.write(cfg)
+                
+
+
+        def _write_tf_record_file(self, categories, entries):
+                is_empty = True
+                writer = tf.python_io.TFRecordWriter(self._object_detection_tfrecord_path)
+                for entry in entries:
+                        grouped_annotations = _group_annotations_per_label(entry.annotations)
+                        for key, annotations in grouped_annotations.items():
+                                path = self._images_dir + os.path.sep + key + os.path.sep + entry.image.uuid + ".jpg"
+                                if os.path.exists(path):
+                                        img = Image.open(path).convert('RGB')
+                                        tfrecord = self._create_tf_entry(categories, img, key, entry.image.uuid, annotations)
+                                        if tfrecord is not None:
+                                                is_empty = False
+                                                log.debug("Adding image %s to tfrecord file" %(entry.image.uuid,))
+                                                writer.write(tfrecord.SerializeToString())
+                writer.close()
+
+                if is_empty:
+                        raise ImageMonkeyGeneralError("Nothing to train (tfrecord file empty)") 
+
+        def _create_tf_entry(self, categories, img, label, filename, annotations):
+                imageFormat = b'jpg'
+
+                width, height = img.size
+
+                imgByteArr = io.BytesIO()
+                img.save(imgByteArr, format='JPEG')
+                encodedImageData = imgByteArr.getvalue()
+
+                xmins = []
+                xmaxs = []
+                ymins = []
+                ymaxs = []
+
+                for annotation in annotations:
+                        rect = None
+                        if type(annotation.data) is Rectangle: #currently we only support Rect annotations, TODO: change me
+                                rect = annotation.data
+                        elif type(annotation.data) is Polygon:
+                                rect = annotation.data.rect
+
+
+                        if rect is not None:
+                                trimmed_rect = rect.trim(Rectangle(0, 0, width, height)) #scale to image dimension in case annotation exceeds image width/height
+
+                                if trimmed_rect.left < 0:
+                                        raise ImageMonkeyGeneralError("trimmed rect left dimension invalid! (<0)")
+                                if trimmed_rect.top < 0:
+                                        raise ImageMonkeyGeneralError("trimmed rect top dimension invalid! (<0)")
+                                if trimmed_rect.width < 0:
+                                        raise ImageMonkeyGeneralError("trimmed rect width dimension invalid! (<0)")
+                                if trimmed_rect.height < 0:
+                                        raise ImageMonkeyGeneralError("trimmed rect height dimension invalid! (<0)")
+
+                                if (trimmed_rect.left + trimmed_rect.width) > width:
+                                        raise ImageMonkeyGeneralError("bounding box width > image width!")
+                                if (trimmed_rect.top + trimmed_rect.height) > height:
+                                        raise ImageMonkeyGeneralError("bounding box height > image height!")
+
+                                xmin = trimmed_rect.left / float(width)
+                                xmax = (trimmed_rect.left + trimmed_rect.width) / float(width)
+                                ymin = trimmed_rect.top / float(height)
+                                ymax = (trimmed_rect.top + trimmed_rect.height) / float(height)
+
+                                #sanity checks
+                                if xmin > xmax:
+                                        raise ImageMonkeyGeneralError("xmin > xmax!")
+
+                                if ymin > ymax:
+                                        raise ImageMonkeyGeneralError("ymin > ymax!")
+
+                                if (xmin == 0) and (xmax == 0) and (ymin == 0) and (ymax == 0):
+                                        continue #skip bounding boxes that are 0
+
+                                xmins.append(xmin)
+                                xmaxs.append(xmax)
+                                ymins.append(ymin)
+                                ymaxs.append(ymax)
+
+
+
+                #we might have some images in our dataset, which don't have a annotation, skip those
+                if((len(xmins) == 0) or (len(xmaxs) == 0) or (len(ymins) == 0) or (len(ymaxs) == 0)):
+                        return None
  
-		classes = [(categories.index(label) + 1)] * len(xmins) #class indexes start with 1
-		labels = [label.encode('utf8')] * len(xmins)
+                classes = [(categories.index(label) + 1)] * len(xmins) #class indexes start with 1
+                labels = [label.encode('utf8')] * len(xmins)
 
-		tf_example = tf.train.Example(features=tf.train.Features(feature={
-	      'image/height': dataset_util.int64_feature(height),
-	      'image/width': dataset_util.int64_feature(width),
-	      'image/filename': dataset_util.bytes_feature(filename.encode()),
-	      'image/source_id': dataset_util.bytes_feature(filename.encode()),
-	      'image/encoded': dataset_util.bytes_feature(encodedImageData),
-	      'image/format': dataset_util.bytes_feature(imageFormat),
-	      'image/object/bbox/xmin': dataset_util.float_list_feature(xmins),
-	      'image/object/bbox/xmax': dataset_util.float_list_feature(xmaxs),
-	      'image/object/bbox/ymin': dataset_util.float_list_feature(ymins),
-	      'image/object/bbox/ymax': dataset_util.float_list_feature(ymaxs),
-	      'image/object/class/text': dataset_util.bytes_list_feature(labels),
-	      'image/object/class/label': dataset_util.int64_list_feature(classes),
-		}))
-		return tf_example
+                tf_example = tf.train.Example(features=tf.train.Features(feature={
+              'image/height': dataset_util.int64_feature(height),
+              'image/width': dataset_util.int64_feature(width),
+              'image/filename': dataset_util.bytes_feature(filename.encode()),
+              'image/source_id': dataset_util.bytes_feature(filename.encode()),
+              'image/encoded': dataset_util.bytes_feature(encodedImageData),
+              'image/format': dataset_util.bytes_feature(imageFormat),
+              'image/object/bbox/xmin': dataset_util.float_list_feature(xmins),
+              'image/object/bbox/xmax': dataset_util.float_list_feature(xmaxs),
+              'image/object/bbox/ymin': dataset_util.float_list_feature(ymins),
+              'image/object/bbox/ymax': dataset_util.float_list_feature(ymaxs),
+              'image/object/class/text': dataset_util.bytes_list_feature(labels),
+              'image/object/class/label': dataset_util.int64_list_feature(classes),
+                }))
+                return tf_example
 
-	def _write_labels_map(self, categories):
-		content = ""
-		for i in range(len(categories)):
-			category = categories[i]
-			content += "item {\n   id:  %d\n   name: '%s'\n}\n\n" %((i+1), category) #ids need to start with 1
+        def _write_labels_map(self, categories):
+                content = ""
+                for i in range(len(categories)):
+                        category = categories[i]
+                        content += "item {\n   id:  %d\n   name: '%s'\n}\n\n" %((i+1), category) #ids need to start with 1
 
-		with open(self._object_detection_label_map_path, "w") as f:
-			f.write(content)
+                with open(self._object_detection_label_map_path, "w") as f:
+                        f.write(content)
 
 
 

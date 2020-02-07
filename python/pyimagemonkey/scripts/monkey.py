@@ -127,10 +127,6 @@ if __name__ == "__main__":
                 filter_dataset = None
                 if num_images_per_label is not None:
                         filter_dataset = LimitDatasetFilter(num_images_per_label=num_images_per_label, max_deviation=max_deviation)
-                
-                tensorboard = None
-                if args.tensorboard_screenshot:
-                    tensorboard = TensorBoard(args.directory, "tensorboard_screenshot.js")
 
                 count_annotations = False
                 if train_type == Type.OBJECT_DETECTION or train_type == Type.OBJECT_SEGMENTATION:
@@ -175,7 +171,9 @@ if __name__ == "__main__":
                                                                                                                 statistics=statistics, filter_dataset=filter_dataset)
                                 tensorflow_trainer.train(labels, min_probability=min_probability, train_type=train_type, learning_rate=args.learning_rate)
                         
-                                if tensorboard is not None:
+
+                                if args.tensorboard_screenshot:
+                                    tensorboard = TensorBoard(args.directory, "tensorboard_screenshot.js", tensorflow_trainer.statistics_dir+"/graphs.png")
                                     tensorboard.start()
                                     tensorboard.screenshot()
                                     tensorboard.stop()
