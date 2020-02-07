@@ -6,6 +6,7 @@ import sys
 import os
 import io
 import traceback
+import time
 from tabulate import tabulate
 sys.path.insert(1, os.path.join(sys.path[0], ('..' + os.path.sep + "..")))
 
@@ -175,6 +176,7 @@ if __name__ == "__main__":
                                 if args.tensorboard_screenshot:
                                     tensorboard = TensorBoard(args.directory, "tensorboard_screenshot.js", tensorflow_trainer.statistics_dir+"/graphs.png")
                                     tensorboard.start()
+                                    time.sleep(60) #wait a bit until tensorboard is loaded
                                     tensorboard.screenshot()
                                     tensorboard.stop()
                         except Exception as e: 
