@@ -7,7 +7,7 @@ from pyimagemonkey.statistics import DefaultTrainingStatistics
 from pyimagemonkey.filters import DatasetFilter
 from pyimagemonkey.filters import LimitDatasetFilter
 from pyimagemonkey.test_models import TestImageClassificationModel
-
+from pyimagemonkey.tensorboard import TensorBoard
 
 __all__ = [
     'API',
@@ -18,5 +18,6 @@ __all__ = [
     'DefaultTrainingStatistics',
     'DatasetFilter',
     'LimitDatasetFilter',
-    'TestImageClassificationModel'
+    'TestImageClassificationModel',
+    'TensorBoard'
 ]

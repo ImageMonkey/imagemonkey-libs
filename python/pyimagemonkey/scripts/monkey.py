@@ -16,6 +16,7 @@ from pyimagemonkey import MaskRcnnTrainer
 from pyimagemonkey import DefaultTrainingStatistics
 from pyimagemonkey import LimitDatasetFilter
 from pyimagemonkey import TestImageClassificationModel
+from pyimagemonkey import TensorBoard
 
 log = logging.getLogger(__name__)
 log.addHandler(logging.NullHandler())
@@ -55,6 +56,7 @@ if __name__ == "__main__":
         train_parser.add_argument("--max-deviation", help="max deviation", required=False, default=None, type=float)
         train_parser.add_argument("--images-per-label", help="number of images per class", required=False, default=None, type=int)
         train_parser.add_argument("--min-probability", help="minimum probability", required=False, default=0.8, type=float)
+        train_parser.add_argument("--tensorboard-screenshot", help="create tensorboard screenshot", required=False, default=True, type=bool)
 
         #add subparser for 'list-labels'
         list_labels_parser = subparsers.add_parser('list-labels', help='list all labels that are available at ImageMonkey')
@@ -79,7 +81,6 @@ if __name__ == "__main__":
         test_model_parser.add_argument("--verbose", help="verbosity", required=False, default=False)
 
         args = parser.parse_args()
-        print(args)
         if args.verbose:
                 logging.basicConfig(level=logging.DEBUG) 
 
@@ -126,6 +127,10 @@ if __name__ == "__main__":
                 filter_dataset = None
                 if num_images_per_label is not None:
                         filter_dataset = LimitDatasetFilter(num_images_per_label=num_images_per_label, max_deviation=max_deviation)
+                
+                tensorboard = None
+                if args.tensorboard_screenshot:
+                    tensorboard = TensorBoard(args.directory, "tensorboard_screenshot.js")
 
                 count_annotations = False
                 if train_type == Type.OBJECT_DETECTION or train_type == Type.OBJECT_SEGMENTATION:
@@ -169,6 +174,11 @@ if __name__ == "__main__":
                                                                                                                 tf_object_detection_models_path="/root/tensorflow_models/",
                                                                                                                 statistics=statistics, filter_dataset=filter_dataset)
                                 tensorflow_trainer.train(labels, min_probability=min_probability, train_type=train_type, learning_rate=args.learning_rate)
+                        
+                                if tensorboard is not None:
+                                    tensorboard.start()
+                                    tensorboard.screenshot()
+                                    tensorboard.stop()
                         except Exception as e: 
                                 traceback.print_exc()
                                 sys.exit(1)

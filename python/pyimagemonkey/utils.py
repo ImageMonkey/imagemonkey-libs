@@ -221,7 +221,7 @@ class TensorflowTrainer(object):
 
 			if self._statistics is not None:
 				self._statistics.output_path = self._statistics_dir + os.path.sep + "statistics.json"
-				self._statistics.generate(d)
+				self._statistics.generate(data)
 				self._statistics.save()
 
 			self._train_object_detection(labels, data, learning_rate)
