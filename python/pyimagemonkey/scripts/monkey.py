@@ -173,7 +173,7 @@ if __name__ == "__main__":
                         
 
                                 if args.tensorboard_screenshot:
-                                    tensorboard = TensorBoard(directory, "tensorboard_screenshot.js", tensorflow_trainer.statistics_dir+"/graphs.png")
+                                    tensorboard = TensorBoard(directory, "/usr/bin/tensorboard_screenshot.js", tensorflow_trainer.statistics_dir+"/graphs.png")
                                     tensorboard.start()
                                     tensorboard.screenshot()
                                     tensorboard.stop()
