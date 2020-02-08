@@ -91,15 +91,19 @@ if __name__ == "__main__":
         if args.command == "train":
                 train_type = None
                 directory = ""
+                tensorboard_logdir = ""
                 if args.type == "object-detection":
                         train_type = Type.OBJECT_DETECTION
                         directory = "/tmp/object_detection/"
+                        tensorboard_logdir = directory
                 elif args.type == "image-classification":
                         train_type = Type.IMAGE_CLASSIFICATION
                         directory = "/tmp/image_classification/"
+                        tensorboard_logdir = "/tmp/retrain_logs"
                 elif args.type == "object-segmentation":
                         train_type = Type.OBJECT_SEGMENTATION
                         directory = "/tmp/object_segmentation/"
+                        tensorboard_logdir = directory
                 else:
                         print("Unknown object_detection type: %s" %(train_type,))
                         sys.exit(1)
@@ -171,9 +175,8 @@ if __name__ == "__main__":
                                                                                                                 statistics=statistics, filter_dataset=filter_dataset)
                                 tensorflow_trainer.train(labels, min_probability=min_probability, train_type=train_type, learning_rate=args.learning_rate)
                         
-
                                 if args.tensorboard_screenshot:
-                                    tensorboard = TensorBoard(directory, "/usr/bin/tensorboard_screenshot.js", tensorflow_trainer.statistics_dir+"/graphs.png")
+                                    tensorboard = TensorBoard(tensorboard_logdir, "/usr/bin/tensorboard_screenshot.js", tensorflow_trainer.statistics_dir+"/graphs.png")
                                     tensorboard.start()
                                     tensorboard.screenshot()
                                     tensorboard.stop()
