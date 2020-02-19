@@ -9,6 +9,26 @@ class DatasetFilter(object):
 	def filter(self, data):
 		raise NotImplementedError("process() not implemented")
 
+class OptimalNumOfImagesPerLabelFilter(DatasetFilter):
+        def __init__(self, api, labels, min_probability, max_deviation):
+                self._api = api
+                self._labels = labels
+                self._min_probability = min_probability
+                self._max_deviation = max_deviation
+                super(OptimalNumOfImagesPerLabelFilter, self).__init__()
+
+        def process(self, data):
+                res = self._api.list_validations(self._min_probability, 0)
+                label_counts = []
+                for r in res:
+                        if r["label"] in self._labels:
+                                label_counts.append(r["count"])
+
+                min_count = min(int(v) for v in label_counts)
+
+                limitDatasetFilter = LimitDatasetFilter(min_count, max_deviation)
+                return limitDatasetFilter.process(data)
+
 class LimitDatasetFilter(DatasetFilter):
 	def __init__(self, num_images_per_label, max_deviation):
 		super(LimitDatasetFilter, self).__init__()

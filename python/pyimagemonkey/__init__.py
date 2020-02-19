@@ -6,6 +6,7 @@ from pyimagemonkey.statistics import TrainingStatistics
 from pyimagemonkey.statistics import DefaultTrainingStatistics
 from pyimagemonkey.filters import DatasetFilter
 from pyimagemonkey.filters import LimitDatasetFilter
+from pyimagemonkey.filters import OptimalNumOfImagesPerLabelFilter
 from pyimagemonkey.test_models import TestImageClassificationModel
 from pyimagemonkey.tensorboard import TensorBoard
 

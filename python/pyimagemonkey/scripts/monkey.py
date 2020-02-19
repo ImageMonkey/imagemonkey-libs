@@ -15,6 +15,7 @@ from pyimagemonkey import TensorflowTrainer
 from pyimagemonkey import MaskRcnnTrainer
 from pyimagemonkey import DefaultTrainingStatistics
 from pyimagemonkey import LimitDatasetFilter
+from pyimagemonkey import OptimalNumOfImagesPerLabelFilter
 from pyimagemonkey import TestImageClassificationModel
 from pyimagemonkey import TensorBoard
 
@@ -57,6 +58,8 @@ if __name__ == "__main__":
         train_parser.add_argument("--images-per-label", help="number of images per class", required=False, default=None, type=int)
         train_parser.add_argument("--min-probability", help="minimum probability", required=False, default=0.8, type=float)
         train_parser.add_argument("--tensorboard-screenshot", help="create tensorboard screenshot", required=False, default=True, type=bool)
+        train_parser.add_argument("--find-optimal-num-of-images-per-label", help="Find optimal number of images per label", required=False, default=False, type=bool)
+
 
         #add subparser for 'list-labels'
         list_labels_parser = subparsers.add_parser('list-labels', help='list all labels that are available at ImageMonkey')
@@ -129,6 +132,9 @@ if __name__ == "__main__":
                         max_deviation = args.max_deviation
 
                 filter_dataset = None
+
+                if args.find_optimal_num_of_images_per_label:
+                        filter_dataset = OptimalNumOfImagesPerLabelFilter(imagemonkey_api, labels, max_deviation)
                 if num_images_per_label is not None:
                         filter_dataset = LimitDatasetFilter(num_images_per_label=num_images_per_label, max_deviation=max_deviation)
 

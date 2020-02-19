@@ -2,7 +2,10 @@ FROM tensorflow/tensorflow:latest
 
 RUN echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selections
 
-RUN apt-get update && apt-get install -y git dos2unix curl nginx nginx-extras wget unzip python3-pip python3-tabulate python-opencv
+RUN apt-get update && apt-get install -y git dos2unix curl nginx nginx-extras wget unzip python3-pip python3-tabulate python-opencv libxtst6 libnss3 libxss1 libasound2  	libatk-bridge2.0-0 libgtk-3.0
+
+RUN curl -sL https://deb.nodesource.com/setup_8.x | bash -
+RUN apt-get update && apt-get install -y nodejs
 
 RUN rm /usr/bin/python \
    && ln -s /usr/bin/python3 /usr/bin/python
@@ -49,6 +52,18 @@ RUN cd /tmp && unzip protoc.zip -d /tmp/protoc
 RUN cd /root/tensorflow_models/research/ \
 	&& /tmp/protoc/bin/protoc object_detection/protos/*.proto --python_out=. \
 	&& rm -rf /notebooks 
+
+
+ENV PYTHONPATH $PYTHONPATH:/root/tensorflow_models/research/object_detection/utils
+
+RUN git clone https://github.com/bbernhard/tensorboard_screenshot.git /tmp/tensorboard_screenshot \
+	&& cp /tmp/tensorboard_screenshot/tensorboard_screenshot.js /notebooks/tensorboard_screenshot.js
+
+RUN ln -s /notebooks/tensorboard_screenshot.js /usr/bin/tensorboard_screenshot.js
+
+RUN npm i puppeteer
+
+RUN mkdir -p /tmp/image_classification_test/
 
 WORKDIR /
 ENTRYPOINT ["/bin/bash"]
