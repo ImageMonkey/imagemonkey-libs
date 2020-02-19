@@ -26,8 +26,8 @@ class OptimalNumOfImagesPerLabelFilter(DatasetFilter):
 
                 min_count = min(int(v) for v in label_counts)
 
-                limitDatasetFilter = LimitDatasetFilter(0, self._max_deviation)
-                return limitDatasetFilter.process(data)
+                limitDatasetFilter = LimitDatasetFilter(min_count, self._max_deviation)
+                return limitDatasetFilter.filter(data)
 
 class LimitDatasetFilter(DatasetFilter):
 	def __init__(self, num_images_per_label, max_deviation):
