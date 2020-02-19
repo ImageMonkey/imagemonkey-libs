@@ -131,10 +131,13 @@ if __name__ == "__main__":
                 if args.max_deviation is not None:
                         max_deviation = args.max_deviation
 
-                filter_dataset = None
+                min_probability = 0.8
+                if args.min_probability is not None:
+                        min_probability = args.min_probability
 
+                filter_dataset = None
                 if args.find_optimal_num_of_images_per_label:
-                        filter_dataset = OptimalNumOfImagesPerLabelFilter(imagemonkey_api, labels, max_deviation)
+                        filter_dataset = OptimalNumOfImagesPerLabelFilter(imagemonkey_api, labels, min_probability,min_probability, max_deviation)
                 if num_images_per_label is not None:
                         filter_dataset = LimitDatasetFilter(num_images_per_label=num_images_per_label, max_deviation=max_deviation)
 
@@ -145,12 +148,7 @@ if __name__ == "__main__":
                 cmd = ''
                 for arg in sys.argv:
                         cmd += ' ' + arg
-                statistics.command = cmd
-
-
-                min_probability = 0.8
-                if args.min_probability is not None:
-                        min_probability = args.min_probability
+                statistics.command = cmd 
 
                 if train_type == Type.OBJECT_DETECTION or train_type == Type.IMAGE_CLASSIFICATION:
                         if args.num_gpus is not None:
