@@ -137,7 +137,7 @@ if __name__ == "__main__":
 
                 filter_dataset = None
                 if args.find_optimal_num_of_images_per_label:
-                        filter_dataset = OptimalNumOfImagesPerLabelFilter(imagemonkey_api, labels, min_probability,min_probability, max_deviation)
+                        filter_dataset = OptimalNumOfImagesPerLabelFilter(imagemonkey_api, labels, min_probability, max_deviation)
                 if num_images_per_label is not None:
                         filter_dataset = LimitDatasetFilter(num_images_per_label=num_images_per_label, max_deviation=max_deviation)
 

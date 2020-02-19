@@ -17,7 +17,7 @@ class OptimalNumOfImagesPerLabelFilter(DatasetFilter):
                 self._max_deviation = max_deviation
                 super(OptimalNumOfImagesPerLabelFilter, self).__init__()
 
-        def process(self, data):
+        def filter(self, data):
                 res = self._api.list_validations(self._min_probability, 0)
                 label_counts = []
                 for r in res:
@@ -26,7 +26,7 @@ class OptimalNumOfImagesPerLabelFilter(DatasetFilter):
 
                 min_count = min(int(v) for v in label_counts)
 
-                limitDatasetFilter = LimitDatasetFilter(min_count, max_deviation)
+                limitDatasetFilter = LimitDatasetFilter(0, self._max_deviation)
                 return limitDatasetFilter.process(data)
 
 class LimitDatasetFilter(DatasetFilter):
