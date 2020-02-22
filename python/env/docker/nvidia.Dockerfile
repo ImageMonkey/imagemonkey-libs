@@ -58,6 +58,7 @@ RUN cd /root/tensorflow_models/research/ \
 ENV PYTHONPATH $PYTHONPATH:/root/tensorflow_models/research/object_detection/utils
 
 RUN git clone https://github.com/bbernhard/tensorboard_screenshot.git /tmp/tensorboard_screenshot \
+	&& mkdir -p /notebooks \
 	&& cp /tmp/tensorboard_screenshot/tensorboard_screenshot.js /notebooks/tensorboard_screenshot.js
 
 RUN ln -s /notebooks/tensorboard_screenshot.js /usr/bin/tensorboard_screenshot.js
