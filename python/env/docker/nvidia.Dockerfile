@@ -40,7 +40,7 @@ RUN cd /home/imagemonkey/models/resnet/v0.2/ && curl -L https://github.com/fchol
 RUN cd ~/
 
 
-RUN pip3 install tensorflow-gpu==1.11.0
+RUN pip3 install tensorflow-gpu==1.14
 
 #until this issue is fixed (https://github.com/matterport/Mask_RCNN/issues/566) we pin keras to version 2.0.8
 RUN pip3 install --force-reinstall keras==2.0.8
