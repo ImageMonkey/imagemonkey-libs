@@ -297,30 +297,3 @@ class MaskRcnnTrainer(Trainer):
 
         self.save_model_to_pb()
 
-
-class MaskRcnnTester(object):
-    def __init__(self, model):
-        self._model = model
-
-    def test(labels, img_path, num_gpus=1, min_image_dimension=800, max_image_dimension=1024, 
-             steps_per_epoch = 100, validation_steps = 70, epochs = 30):
-        self._config = ImageMonkeyConfig(len(labels), num_gpus, min_image_dimension, max_image_dimension, 
-                                    steps_per_epoch, validation_steps)
-        self._config.display()
-
-        # Create model object in inference mode.
-        self._model = modellib.MaskRCNN(mode="inference", model_dir=self._model, config=self._config)
-
-        # Load weights trained on MS-COCO
-        self._model.load_weights(self._model, by_name=True)
-
-
-        image = skimage.io.imread(img_path)
-
-        # Run detection
-        results = model.detect([image], verbose=1)
-
-        # Visualize results
-        r = results[0]
-        visualize.display_instances(image, r['rois'], r['masks'], r['class_ids'], 
-                            labels, r['scores'])
