@@ -20,6 +20,8 @@ import pyimagemonkey.tf_pipeline_configs as tf_pipeline_configs
 import pyimagemonkey.helper as helper
 import pyimagemonkey.tensorflow_helper as tf_helper
 
+log = logging.getLogger(__name__)
+log.addHandler(logging.NullHandler())
 
 def _group_annotations_per_label(annotations):
         result = {}
@@ -32,9 +34,6 @@ def _group_annotations_per_label(annotations):
                         result[annotation.label] = [annotation]
 
         return result
-
-log = logging.getLogger(__name__)
-log.addHandler(logging.NullHandler())
 
 class TensorflowTrainer(object):
         def __init__(self, training_dir, clear_before_start=False, auto_download_tensorflow_train_script=True, 

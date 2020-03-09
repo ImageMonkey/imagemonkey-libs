@@ -7,8 +7,10 @@ from pyimagemonkey.statistics import DefaultTrainingStatistics
 from pyimagemonkey.filters import DatasetFilter
 from pyimagemonkey.filters import LimitDatasetFilter
 from pyimagemonkey.filters import OptimalNumOfImagesPerLabelFilter
-from pyimagemonkey.test_models import TestImageClassificationModel
+from pyimagemonkey.test_image_classification_model import TestImageClassificationModel
 from pyimagemonkey.tensorboard import TensorBoard
+from pyimagemonkey.mask_rcnn_config import ImageMonkeyConfig
+from pyimagemonkey.test_image_segmentation_model import TestMaskRcnnModel
 
 __all__ = [
     'API',
@@ -20,5 +22,7 @@ __all__ = [
     'DatasetFilter',
     'LimitDatasetFilter',
     'TestImageClassificationModel',
-    'TensorBoard'
+    'TensorBoard',
+    'ImageMonkeyConfig',
+    'TestMaskRcnnModel'
 ]

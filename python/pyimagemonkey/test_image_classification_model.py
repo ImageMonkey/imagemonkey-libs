@@ -9,6 +9,7 @@ import cv2
 from pathlib import Path
 import tensorflow as tf
 import numpy as np
+import pyimagemonkey.helper as helper 
 
 log = logging.getLogger(__name__)
 log.addHandler(logging.NullHandler())
@@ -23,7 +24,7 @@ class TestImageClassificationModel(object):
                 self._label_image_py = self._output_tmp_dir + os.path.sep + "label_retrain.py"
 
                 if clear_before_start:
-                        self.clear_output_dir()
+                        clear_output_dir(self._output_dir)
 
                 if not os.path.exists(self._output_tmp_dir):
                         os.makedirs(self._output_tmp_dir)
@@ -36,20 +37,6 @@ class TestImageClassificationModel(object):
 
                 if not os.path.exists(self._label_image_py):
                         tf_helper.download_release_specific_label_image_py("v1.8.0", self._label_image_py)
-
-
-        def clear_output_dir(self):
-                for f in os.listdir(self._output_dir):
-                        filePath = os.path.join(self._output_dir, f)
-                        try:
-                                if os.path.isfile(filePath):
-                                        os.unlink(filePath)
-                                elif os.path.isdir(filePath): shutil.rmtree(filePath)
-                        except Exception as e:
-                                log.error("Couldn't clear output directory %s" %(self._output_dir,))
-                                raise ImageMonkeyGeneralError("Couldn't clear output directory %s" %(self._output_dir,))
-
-
 
         def _run_command(self, command, cwd=None, env=None):
                 process = None

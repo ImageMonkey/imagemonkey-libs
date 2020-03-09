@@ -17,6 +17,7 @@ from pyimagemonkey import DefaultTrainingStatistics
 from pyimagemonkey import LimitDatasetFilter
 from pyimagemonkey import OptimalNumOfImagesPerLabelFilter
 from pyimagemonkey import TestImageClassificationModel
+from pyimagemonkey import TestMaskRcnnModel 
 from pyimagemonkey import TensorBoard
 
 log = logging.getLogger(__name__)
@@ -253,4 +254,7 @@ if __name__ == "__main__":
                         directory = "/tmp/image_classification_test/"
                         test_image_classification_model = TestImageClassificationModel(args.model, args.labels, directory, clear_before_start=True)
                         test_image_classification_model.label_image(args.image, args.output_image)
-                
+                if args.type == "object-segmentation":
+                        directory = "/tmp/object_segmentation_test/"
+                        test_object_segmentation_model = TestMaskRcnnModel(args.model, args.labels, directory, clear_before_start=True)
+                        test_object_segmentation_model.annotate_image(args.image)
