@@ -232,7 +232,7 @@ class MaskRcnnTrainer(Trainer):
         self._create_classes_file(labels)
         self._create_annotations_file(data)
 
-        cmd = "maskrcnn-train csv " + self._annotations_file + " " + self._classes_file
+        cmd = ["/usr/local/bin/maskrcnn-train", "csv", self._annotations_file, self._classes_file]
         print(cmd)
         
         helper.run_command(cmd) 
