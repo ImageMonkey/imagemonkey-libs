@@ -3,7 +3,7 @@ import sys
 import json
 import datetime
 import numpy as np
-import skimage
+#import skimage
 import shutil
 import math
 import cv2 as cv
@@ -16,117 +16,8 @@ from tensorflow.python.framework import graph_util
 from pyimagemonkey.api import *
 from pyimagemonkey.exceptions import *
 
-from mrcnn.config import Config
-from mrcnn import model as modellib, utils
-from pyimagemonkey.mask_rcnn_config import ImageMonkeyConfig
-
-class ImageMonkeyDataset(utils.Dataset):
-
-    def _add_me(self, ctr, mode):
-        m = 3 #split up dataset; 30% validation set, 70% training set
-        if (ctr%3) == 0:
-            if mode == "validation":
-                return True
-        else:
-            if mode == "training":
-                return True
-        return False
-
-    def load(self, entries, labels, mode):
-        """Load a subset of the ImageMonkey dataset.
-        subset: Subset to load: train or val
-        """
-        # Add classes.
-
-        i = 1
-        for label in labels:
-            self.add_class("imagemonkey", i, label)
-            i += 1
-        self._all_labels = labels
-
-        # Train or validation dataset?
-        assert mode in ["training", "validation"]
-        
-
-        ctr = 0
-        for entry in entries:
-            ctr += 1
-            if self._add_me(ctr, mode):
-                img = entry.image
-
-                annotations = entry.annotations
-                self.add_image(
-                    "imagemonkey",
-                    image_id=img.uuid,
-                    path=img.path,
-                    width=img.width,
-                    height=img.height,
-                    annotations=annotations,
-                    labels=labels
-                )
-
-    def load_mask(self, image_id):
-        # If not a ImageMonkey dataset image, delegate to parent class.
-        image_info = self.image_info[image_id]
-        if image_info["source"] != "imagemonkey":
-            return super(self.__class__, self).load_mask(image_id)
-
-        log.debug("Loading mask for image with id %s" %(image_id))
-
-        class_ids = []
-        annotations = image_info["annotations"]
-        #create n-dimensional mask with zeros
-        mask = np.zeros([image_info["width"], image_info["height"], len(annotations)],
-                        dtype=np.uint8)
-        for i, annotation in enumerate(annotations):
-            if annotation.label not in self._all_labels:
-                raise ImageMonkeyGeneralError("Warning: imagemonkey annotation with label %s as not in labels to train" %(annotation.label))
-
-            if type(annotation.data) is Ellipse:
-                trimmed_ellipse = annotation.data.trim(Rectangle(0, 0, image_info["width"], image_info["height"]))
-
-                rr, cc = skimage.draw.ellipse(trimmed_ellipse.cx, trimmed_ellipse.cy, 
-                                              trimmed_ellipse.rx, trimmed_ellipse.ry, rotation=math.radians(trimmed_ellipse.angle))
-                mask[rr, cc, i] = 1
-
-
-            elif type(annotation.data) is Rectangle or type(annotation.data) is Polygon:
-                polypoints = annotation.data.points
-                trimmed_polypoints = polypoints.trim(Rectangle(0, 0, image_info["width"], image_info["height"])) 
-
-                xvals = []
-                yvals = []
-                for polypoint in trimmed_polypoints.points:
-                    xvals.append(polypoint.x)
-                    yvals.append(polypoint.y)
-
-                # Get indexes of pixels inside the polygon and set them to 1
-                rr, cc = skimage.draw.polygon(xvals, yvals)
-                mask[rr, cc, i] = 1
-
-            class_ids.append(self.class_names.index(annotation.label)) #get class id from label
-
-
-        #if there is at least one annotation
-        if class_ids:
-            class_ids = np.array(class_ids, dtype=np.int32)
-
-            return mask, class_ids
-
-        # Call super class to return an empty mask (in case there are no annotations)
-        return super(self.__class__, self).load_mask(image_id) 
-
-
-
-
-    def image_reference(self, image_id):
-        """Return the path of the image."""
-        info = self.image_info[image_id]
-        if info["source"] == "imagemonkey":
-            return info["path"]
-        else:
-            super(self.__class__, self).image_reference(image_id)
-
+#from mrcnn.config import Config
+#from mrcnn import model as modellib, utils
 
 class Trainer(object):
     def __init__(self, training_dir, clear_before_start):
@@ -231,7 +122,7 @@ class MaskRcnnTrainer(Trainer):
 
         return res
 
-    def save_model_to_pb(self):
+    """def save_model_to_pb(self):
         log.info("Saving model...")
         # Create model in inference mode
         saved_model = modellib.MaskRCNN(mode="inference",
@@ -264,7 +155,7 @@ class MaskRcnnTrainer(Trainer):
         with tf.gfile.GFile(frozen_graph_path, 'wb') as f:
             f.write(od_graph_def.SerializeToString())
         log.info("Froze graph: %s" %(pb_filepath))
-
+    """
     
 
     def _create_classes_file(self, labels):
