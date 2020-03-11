@@ -186,8 +186,12 @@ class MaskRcnnTrainer(Trainer):
 
                 if type(annotation.data) is Ellipse:
                     trimmed_ellipse = annotation.data.trim(Rectangle(0, 0, image_width, image_height))
-                    #TODO
+            
+                    cv.ellipse(mask_img, (trimed_ellipse.cx, trimmed_ellipse.cy), (trimmed_ellipse.rx, trimmed_ellipse.ry), 
+                        trimmed_ellipse.angle, 0, 360, (255,255,255), -1)
 
+                    #TODO: calculate bounding box for ellipse (can we use the left, right, top, bottom properties of trimmed_ellipse?????)
+                
                 elif type(annotation.data) is Rectangle or type(annotation.data) is Polygon:
                     polypoints = annotation.data.points
                     trimmed_polypoints = polypoints.trim(Rectangle(0, 0, image_width, image_height))
@@ -201,11 +205,20 @@ class MaskRcnnTrainer(Trainer):
                         yvals.append(polypoint.y)
 
                     cv.fillPoly(mask_img, pts =[np.asarray(p)], color=(255,255,255))
-                
-                    bounding_box = [min(xvals), min(yvals), max(xvals), max(yvals)]
+                    
+                # get bounding rect from mask
+                gray_mask_img = cv.cvtColor(mask_img, cv.COLOR_BGR2GRAY)
+                non_zero_points = cv.findNonZero(gray_mask_img)
+                bounding_box = cv.boundingRect(non_zero_points)
+
+                #bounding_box = [min(xvals), min(yvals), max(xvals), max(yvals)]
                 
                 cv.imwrite(mask_output_path, mask_img)
-                print(annotation.label) 
+               
+                #out += (entry.image.path + "," + str(bounding_box.x) + "," + str(bounding_box.y) 
+                #            + "," + str(bounding_box.width) + "," + str(bounding_box.height) 
+                #            + "," + annotation.label + "," + mask_output_path + "\n")
+                
                 out += (entry.image.path + "," + str(bounding_box[0]) + "," + str(bounding_box[1]) 
                     + "," + str(bounding_box[2]) + "," + str(bounding_box[3]) + "," + annotation.label + "," + mask_output_path + "\n")
         
