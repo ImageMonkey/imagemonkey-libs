@@ -209,7 +209,7 @@ class MaskRcnnTrainer(Trainer):
                 # get bounding rect from mask
                 gray_mask_img = cv.cvtColor(mask_img, cv.COLOR_BGR2GRAY)
                 non_zero_points = cv.findNonZero(gray_mask_img)
-                bounding_box = cv.boundingRect(non_zero_points)
+                bounding_box_x, bounding_box_y, bounding_box_w, bounding_box_h = cv.boundingRect(non_zero_points)
 
                 #bounding_box = [min(xvals), min(yvals), max(xvals), max(yvals)]
                 
@@ -219,8 +219,10 @@ class MaskRcnnTrainer(Trainer):
                 #            + "," + str(bounding_box.width) + "," + str(bounding_box.height) 
                 #            + "," + annotation.label + "," + mask_output_path + "\n")
                 
-                out += (entry.image.path + "," + str(bounding_box[0]) + "," + str(bounding_box[1]) 
-                    + "," + str(bounding_box[2]) + "," + str(bounding_box[3]) + "," + annotation.label + "," + mask_output_path + "\n")
+                if (bounding_box_x != 0 and bounding_box_y != 0 and bounding_box_w != 0 and bounding_box_h != 0):
+                    out += (entry.image.path + "," + str(bounding_box_x) + "," + str(bounding_box_y) 
+                                + "," + str(bounding_box_x+bounding_box_w) + "," + str(bounding_box_y+bounding_box_h) 
+                                + "," + annotation.label + "," + mask_output_path + "\n")
         
         with open(self._annotations_file, "w") as f:
             f.write(out)
