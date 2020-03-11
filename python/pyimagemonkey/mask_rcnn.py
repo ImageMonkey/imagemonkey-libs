@@ -187,7 +187,7 @@ class MaskRcnnTrainer(Trainer):
                 if type(annotation.data) is Ellipse:
                     trimmed_ellipse = annotation.data.trim(Rectangle(0, 0, image_width, image_height))
             
-                    cv.ellipse(mask_img, (trimed_ellipse.cx, trimmed_ellipse.cy), (trimmed_ellipse.rx, trimmed_ellipse.ry), 
+                    cv.ellipse(mask_img, (trimmed_ellipse.cx, trimmed_ellipse.cy), (trimmed_ellipse.rx, trimmed_ellipse.ry), 
                         trimmed_ellipse.angle, 0, 360, (255,255,255), -1)
 
                     #TODO: calculate bounding box for ellipse (can we use the left, right, top, bottom properties of trimmed_ellipse?????)
