@@ -89,6 +89,7 @@ class MaskRcnnTrainer(Trainer):
         self._all_labels = []
         
         self._tmp_output_dir = self.output_dir + os.path.sep + "tmp"
+        self._model_output_dir = self.output_dir + os.path.sep + "model"
         self._classes_file = self._tmp_output_dir + os.path.sep + "classes.txt"
         self._annotations_file =  self._tmp_output_dir + os.path.sep + "annotations.csv"
         self._mask_output_dir = self.output_dir + os.path.sep + "tmp" + os.path.sep + "masks"
@@ -99,6 +100,8 @@ class MaskRcnnTrainer(Trainer):
         if not os.path.exists(self._mask_output_dir):
             os.makedirs(self._mask_output_dir)    
 
+        if not os.path.exists(self._model_output_dir):
+            os.makedirs(self._model_output_dir) 
  
     def _export_data_and_download_images(self, labels, min_probability):
         extension = ".jpg"
@@ -122,7 +125,8 @@ class MaskRcnnTrainer(Trainer):
 
         return res
 
-    """def save_model_to_pb(self):
+    """
+    def save_model_to_pb(self):
         log.info("Saving model...")
         # Create model in inference mode
         saved_model = modellib.MaskRCNN(mode="inference",
@@ -155,8 +159,7 @@ class MaskRcnnTrainer(Trainer):
         with tf.gfile.GFile(frozen_graph_path, 'wb') as f:
             f.write(od_graph_def.SerializeToString())
         log.info("Froze graph: %s" %(pb_filepath))
-    """
-    
+    """ 
 
     def _create_classes_file(self, labels):
         out = ""
@@ -210,27 +213,23 @@ class MaskRcnnTrainer(Trainer):
                 gray_mask_img = cv.cvtColor(mask_img, cv.COLOR_BGR2GRAY)
                 non_zero_points = cv.findNonZero(gray_mask_img)
                 bounding_box_x, bounding_box_y, bounding_box_w, bounding_box_h = cv.boundingRect(non_zero_points)
-
-                #bounding_box = [min(xvals), min(yvals), max(xvals), max(yvals)]
                 
                 cv.imwrite(mask_output_path, mask_img)
-               
-                #out += (entry.image.path + "," + str(bounding_box.x) + "," + str(bounding_box.y) 
-                #            + "," + str(bounding_box.width) + "," + str(bounding_box.height) 
-                #            + "," + annotation.label + "," + mask_output_path + "\n")
                 
                 if (bounding_box_x != 0 and bounding_box_y != 0 and bounding_box_w != 0 and bounding_box_h != 0):
                     out += (entry.image.path + "," + str(bounding_box_x) + "," + str(bounding_box_y) 
                                 + "," + str(bounding_box_x+bounding_box_w) + "," + str(bounding_box_y+bounding_box_h) 
                                 + "," + annotation.label + "," + mask_output_path + "\n")
+
+                # TODO: consider angle in rect/poly (rotate function in opencv? maybe getRotationMatrix2D?) 
         
         with open(self._annotations_file, "w") as f:
             f.write(out)
     
     def train(self, labels, min_probability=0.8, num_gpus=1, 
                 min_image_dimension=800, max_image_dimension=1024, 
-                steps_per_epoch = 100, validation_steps = 70, 
-                epochs = 30, save_best_only = True):
+                steps_per_epoch = 10000, validation_steps = 70, 
+                epochs = 50, save_best_only = True):
 
         self._all_labels = labels
         model_path = None
@@ -247,15 +246,15 @@ class MaskRcnnTrainer(Trainer):
         self._create_classes_file(labels)
         self._create_annotations_file(data)
 
-        cmd = ["/usr/local/bin/maskrcnn-train", "csv", self._annotations_file, self._classes_file]
+        cmd = ["maskrcnn-train", "--snapshot-path", self._model_output_dir, "--epochs", str(epochs), "--steps", str(steps_per_epoch), 
+                "csv", self._annotations_file, self._classes_file]
         print(cmd)
         
         helper.run_command(cmd) 
 
-        """if self._statistics is not None:
+        if self._statistics is not None:
             self._statistics.output_path = self._statistics_dir + os.path.sep + "statistics.json"
-            #self._statistics.class_names = self._training_dataset.class_names
+            self._statistics.class_names = labels
             self._statistics.generate(data)
             self._statistics.save()
-        """
 
