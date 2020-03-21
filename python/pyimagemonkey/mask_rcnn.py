@@ -81,11 +81,10 @@ class Trainer(object):
 
 
 class MaskRcnnTrainer(Trainer):
-    def __init__(self, training_dir, clear_before_start=True, model="imagenet", filter_dataset=None, statistics=None):
+    def __init__(self, training_dir, clear_before_start=True, filter_dataset=None, statistics=None):
         super(MaskRcnnTrainer, self).__init__(training_dir, clear_before_start)
         self._filter = filter_dataset
         self._statistics = statistics
-        self._base_model = model
         self._all_labels = []
         
         self._tmp_output_dir = self.output_dir + os.path.sep + "tmp"
@@ -232,14 +231,6 @@ class MaskRcnnTrainer(Trainer):
                 epochs = 50, save_best_only = True):
 
         self._all_labels = labels
-        model_path = None
-        if self._base_model == "imagenet":
-            model_path = self._model.get_imagenet_weights()
-        else:
-            model_path = self._base_model
-
-        if model_path is None:
-            raise ImageMonkeyGeneralError("Model path is missing - please provide a valid model path!")
 
         data = self._export_data_and_download_images(labels, min_probability)
 

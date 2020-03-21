@@ -46,15 +46,9 @@ if __name__ == "__main__":
         train_parser.add_argument('--labels', help='list of ImageMonkey labels that you want to train your model on. default: all labels', default=None, required=False)
         train_parser.add_argument("--delimiter", help="label delimiter", default="|")
         train_parser.add_argument("--type", help="type (object-detection | image-classification | object-segmentation)", required=True)
-        train_parser.add_argument("--num-gpus", help="number of GPUs you want to use for training", required=False, default=None, type=int)
-        train_parser.add_argument("--min-img-size", help="minimal image size", required=False, default=None, type=int)
-        train_parser.add_argument("--max-img-size", help="maximal image size", required=False, default=None, type=int)
         train_parser.add_argument("--steps-per-epoch", help="training steps per epoch", required=False, default=None, type=int)
-        train_parser.add_argument("--validation-steps", help="validation steps", required=False, default=None, type=int)
-        train_parser.add_argument("--learning-rate", help="learning rate", required=False, default=None)
         train_parser.add_argument("--verbose", help="verbosity", required=False, default=False)
         train_parser.add_argument("--epochs", help="num of epochs you want to train", required=False, default=None, type=int)
-        train_parser.add_argument("--save-best-only", help="save only best checkpoint", required=False, default=None, type=bool)
         train_parser.add_argument("--max-deviation", help="max deviation", required=False, default=None, type=float)
         train_parser.add_argument("--images-per-label", help="number of images per class", required=False, default=None, type=int)
         train_parser.add_argument("--min-probability", help="minimum probability", required=False, default=0.8, type=float)
@@ -152,22 +146,10 @@ if __name__ == "__main__":
                 statistics.command = cmd 
 
                 if train_type == Type.OBJECT_DETECTION or train_type == Type.IMAGE_CLASSIFICATION:
-                        if args.num_gpus is not None:
-                                parser.error('--num-gpus is only allowed when --type=object-segmentation')
-                        if args.min_img_size is not None:
-                                parser.error('--min-img-size is only allowed when --type=object-segmentation')
-                        if args.max_img_size is not None:
-                                parser.error('--max-img-size is only allowed when --type=object-segmentation')
                         if args.steps_per_epoch is not None:
                                 parser.error('--steps-per-epoch is only allowed when --type=object-segmentation')
-                        if args.validation_steps is not None:
-                                parser.error('--validation-steps is only allowed when --type=object-segmentation')
-                        if (args.learning_rate is not None) and (train_type == Type.IMAGE_CLASSIFICATION):
-                                parser.error('--learning-rate is only allowed when --type=object-detection')
                         if args.epochs is not None:
                                 parser.error('--epochs is only allowed when --type=object-segmentation')
-                        if args.save_best_only is not None:
-                                parser.error('--save-best-only is only allowed when --type=object-segmentation')
 
                         if train_type == Type.IMAGE_CLASSIFICATION:
                                 statistics.basemodel = "inception_v3"
@@ -189,37 +171,20 @@ if __name__ == "__main__":
                                 traceback.print_exc()
                                 sys.exit(1)
                 else:
-                        min_img_size = 800
-                        max_img_size = 1024
-                        num_gpus = 1
                         steps_per_epoch = 100
                         validation_steps = 30
                         epochs = 30
-                        save_best_only = True
-                        if args.num_gpus is not None:
-                                num_gpus = args.num_gpus
-                        if args.min_img_size is not None:
-                                min_img_size = args.min_img_size
-                        if args.max_img_size is not None:
-                                max_img_size = args.max_img_size
                         if args.steps_per_epoch is not None:
                                 steps_per_epoch = args.steps_per_epoch
-                        if args.validation_steps is not None:
-                                validation_steps = args.validation_steps
                         if args.epochs is not None:
                                 epochs = args.epochs
-                        if args.learning_rate is not None:
-                                parser.error('--learning-rate is only allowed when --type=object-detection')
-                        if args.save_best_only is not None:
-                                save_best_only = args.save_best_only
 
                         statistics.basemodel = "resnet50"
 
                         try:
-                                maskrcnn_trainer = MaskRcnnTrainer(directory, filter_dataset=filter_dataset, statistics=statistics,
-                                                                                                        model="/home/imagemonkey/models/resnet/v0.2/resnet50_weights_tf_dim_ordering_tf_kernels_notop.h5")
-                                maskrcnn_trainer.train(labels, min_probability=min_probability, num_gpus=num_gpus, min_image_dimension=min_img_size, max_image_dimension=max_img_size, 
-                                                                                steps_per_epoch=steps_per_epoch, validation_steps=validation_steps, epochs=epochs, save_best_only=save_best_only)
+                                maskrcnn_trainer = MaskRcnnTrainer(directory, filter_dataset=filter_dataset, statistics=statistics)
+                                maskrcnn_trainer.train(labels, min_probability=min_probability, 
+                                                                                steps_per_epoch=steps_per_epoch,epochs=epochs)
                         except Exception as e: 
                                 traceback.print_exc()
                                 sys.exit(1)
