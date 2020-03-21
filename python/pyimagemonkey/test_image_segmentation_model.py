@@ -13,7 +13,6 @@ from keras_maskrcnn.utils.visualization import draw_mask
 from keras_retinanet.utils.visualization import draw_box, draw_caption, draw_annotations
 from keras_retinanet.utils.image import read_image_bgr, preprocess_image, resize_image
 from keras_retinanet.utils.colors import label_color
-from keras_retinanet.utils.gpu import setup_gpu
 
 # import miscellaneous modules
 import matplotlib.pyplot as plt
@@ -24,6 +23,21 @@ import time
 
 # set tf backend to allow memory to grow, instead of claiming everything
 import tensorflow as tf
+
+def setup_gpu(gpu_id):
+    import os
+    if tf_version_ok((2, 0, 0)):
+        raise Exception("Not implemented!")
+    
+    else:
+        if gpu_id == 'cpu' or gpu_id == -1:
+            os.environ['CUDA_VISIBLE_DEVICES'] = ""
+            return
+
+        os.environ['CUDA_VISIBLE_DEVICES'] = str(gpu_id)
+        config = tf.ConfigProto()
+        config.gpu_options.allow_growth = True
+        tf.keras.backend.set_session(tf.Session(config=config))
 
 class TestMaskRcnnModel(object):
     def __init__(self, path_to_model, path_to_labels, output_dir, clear_before_start=False):
