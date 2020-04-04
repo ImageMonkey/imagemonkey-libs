@@ -13,7 +13,6 @@ RUN rm /usr/bin/python \
 RUN mkdir -p /home/imagemonkey/bin
 
 RUN git clone https://github.com/bbernhard/imagemonkey-libs.git /home/imagemonkey/imagemonkey-libs
-RUN cd /home/imagemonkey/imagemonkey-libs && git checkout mask_rcnn_replacement
 
 # the tensorflow developers are changing/deprecating stuff so frequently that we can't use the master branch
 # so we checkout an (arbitrary but fixed) specific commit to get a reproducible docker image.
