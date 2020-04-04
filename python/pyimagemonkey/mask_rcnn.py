@@ -6,6 +6,7 @@ import numpy as np
 #import skimage
 import shutil
 import math
+import logging
 import cv2 as cv
 import tensorflow as tf
 import pyimagemonkey.helper as helper
@@ -16,8 +17,8 @@ from tensorflow.python.framework import graph_util
 from pyimagemonkey.api import *
 from pyimagemonkey.exceptions import *
 
-#from mrcnn.config import Config
-#from mrcnn import model as modellib, utils
+log = logging.getLogger(__name__)
+log.addHandler(logging.NullHandler())
 
 class Trainer(object):
     def __init__(self, training_dir, clear_before_start):
@@ -239,6 +240,7 @@ class MaskRcnnTrainer(Trainer):
                                     color=(255,0,0), thickness=2)
                     cv.putText(debug_img, annotation.label, (50, 50), cv.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2, cv.LINE_AA) 
                     cv.imwrite(debug_img_output_path, debug_img)
+                    log.info("Debug mask written to %s" %debug_img_output_path)
                 
                 if (bounding_box_x != 0 and bounding_box_y != 0 and bounding_box_w != 0 and bounding_box_h != 0):
                     out += (entry.image.path + "," + str(bounding_box_x) + "," + str(bounding_box_y) 
@@ -255,6 +257,10 @@ class MaskRcnnTrainer(Trainer):
                 steps_per_epoch = 10000, validation_steps = 70, 
                 epochs = 50, debug = True):
 
+
+        if debug:
+            log.info("Debugging enabled. masks + bounding rects are written to %s" %self._debug_img_output_dir)
+
         self._all_labels = labels
 
         data = self._export_data_and_download_images(labels, min_probability)
@@ -264,8 +270,8 @@ class MaskRcnnTrainer(Trainer):
 
         cmd = ["maskrcnn-train", "--snapshot-path", self._model_output_dir, "--epochs", str(epochs), "--steps", str(steps_per_epoch), 
                 "csv", self._annotations_file, self._classes_file]
-        print(cmd)
-        
+       
+        log.info("Starting the training") 
         helper.run_command(cmd) 
 
         if self._statistics is not None:
