@@ -92,6 +92,7 @@ class MaskRcnnTrainer(Trainer):
         self._classes_file = self._tmp_output_dir + os.path.sep + "classes.txt"
         self._annotations_file =  self._tmp_output_dir + os.path.sep + "annotations.csv"
         self._mask_output_dir = self.output_dir + os.path.sep + "tmp" + os.path.sep + "masks"
+        self._debug_img_output_dir = self.output_dir + os.path.sep + "tmp" + os.path.sep + "debug"
 
         if not os.path.exists(self._tmp_output_dir):
             os.makedirs(self._tmp_output_dir)
@@ -101,6 +102,9 @@ class MaskRcnnTrainer(Trainer):
 
         if not os.path.exists(self._model_output_dir):
             os.makedirs(self._model_output_dir) 
+
+        if not os.path.exists(self._debug_img_output_dir):
+            os.makedirs(self._debug_img_output_dir) 
  
     def _export_data_and_download_images(self, labels, min_probability):
         extension = ".jpg"
@@ -169,28 +173,40 @@ class MaskRcnnTrainer(Trainer):
         with open(self._classes_file, "w") as f:
             f.write(out)
 
-    def _create_annotations_file(self, entries):
+    def _create_annotations_file(self, entries, debug=False):
         out = ""
         for entry in entries:
             annotations = entry.annotations
             image_width = entry.image.width
-            image_height = entry.image.height
-
-            # Create a black image
-            mask_img = np.zeros((image_height, image_width, 3), np.uint8)
+            image_height = entry.image.height 
             
             for i, annotation in enumerate(annotations):
                 if annotation.label not in self._all_labels:
                     raise ImageMonkeyGeneralError("Warning: imagemonkey annotation with label %s as not in labels to train" %(annotation.label))
               
-                mask_output_path = self._mask_output_dir + os.path.sep + entry.image.uuid + "_" + str(i) + ".png" 
-                bounding_box = None 
+                # Create a black image
+                mask_img = np.zeros((image_height, image_width, 3), np.uint8)
 
+                debug_img = None
+                if debug:
+                    debug_img = cv.imread(entry.image.path) 
+
+                mask_output_path = self._mask_output_dir + os.path.sep + entry.image.uuid + "_" + str(i) + ".png" 
+                
+                debug_img_output_path = None
+                if debug_img is not None:
+                    debug_img_output_path  = self._debug_img_output_dir + os.path.sep + entry.image.uuid + "_" + str(i) + ".png"
+                
+                bounding_box = None  
                 if type(annotation.data) is Ellipse:
                     trimmed_ellipse = annotation.data.trim(Rectangle(0, 0, image_width, image_height))
             
                     cv.ellipse(mask_img, (trimmed_ellipse.cx, trimmed_ellipse.cy), (trimmed_ellipse.rx, trimmed_ellipse.ry), 
                         trimmed_ellipse.angle, 0, 360, (255,255,255), -1)
+
+                    if debug_img is not None:
+                        cv.ellipse(debug_img, (trimmed_ellipse.cx, trimmed_ellipse.cy), (trimmed_ellipse.rx, trimmed_ellipse.ry), 
+                            trimmed_ellipse.angle, 0, 360, (255,255,255), -1)
 
                     #TODO: calculate bounding box for ellipse (can we use the left, right, top, bottom properties of trimmed_ellipse?????)
                 
@@ -207,13 +223,22 @@ class MaskRcnnTrainer(Trainer):
                         yvals.append(polypoint.y)
 
                     cv.fillPoly(mask_img, pts =[np.asarray(p)], color=(255,255,255))
+
+                    if debug_img is not None:
+                        cv.fillPoly(debug_img, pts =[np.asarray(p)], color=(255,255,255))
                     
                 # get bounding rect from mask
                 gray_mask_img = cv.cvtColor(mask_img, cv.COLOR_BGR2GRAY)
                 non_zero_points = cv.findNonZero(gray_mask_img)
                 bounding_box_x, bounding_box_y, bounding_box_w, bounding_box_h = cv.boundingRect(non_zero_points)
                 
-                cv.imwrite(mask_output_path, mask_img)
+                cv.imwrite(mask_output_path, mask_img) 
+
+                if debug_img is not None:
+                    cv.rectangle(debug_img, (bounding_box_x, bounding_box_y), (bounding_box_x+bounding_box_w, bounding_box_y+bounding_box_h),
+                                    color=(255,0,0), thickness=2)
+                    cv.putText(debug_img, annotation.label, (50, 50), cv.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2, cv.LINE_AA) 
+                    cv.imwrite(debug_img_output_path, debug_img)
                 
                 if (bounding_box_x != 0 and bounding_box_y != 0 and bounding_box_w != 0 and bounding_box_h != 0):
                     out += (entry.image.path + "," + str(bounding_box_x) + "," + str(bounding_box_y) 
@@ -228,14 +253,14 @@ class MaskRcnnTrainer(Trainer):
     def train(self, labels, min_probability=0.8, num_gpus=1, 
                 min_image_dimension=800, max_image_dimension=1024, 
                 steps_per_epoch = 10000, validation_steps = 70, 
-                epochs = 50, save_best_only = True):
+                epochs = 50, debug = True):
 
         self._all_labels = labels
 
         data = self._export_data_and_download_images(labels, min_probability)
 
         self._create_classes_file(labels)
-        self._create_annotations_file(data)
+        self._create_annotations_file(data, debug)
 
         cmd = ["maskrcnn-train", "--snapshot-path", self._model_output_dir, "--epochs", str(epochs), "--steps", str(steps_per_epoch), 
                 "csv", self._annotations_file, self._classes_file]
